@@ -1,9 +1,10 @@
 package types
 
 const (
-	AddressLength = 20 // 20 byte
-	AddressTitle  = "zltc"
-	HashLength    = 32 // 32 byte
+	AddressVersion = 1
+	AddressLength  = 20 // 20 byte
+	AddressTitle   = "zltc"
+	HashLength     = 32 // 32 byte
 )
 
 // Address define `Address` type
