@@ -1,9 +1,11 @@
-package crypto
+package sm2p256v1
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSm2p256v1Api_GenerateKeyPair(t *testing.T) {
-	sk, err := NewSm2p256v1Api().GenerateKeyPair()
+	sk, err := New().GenerateKeyPair()
 	if err != nil {
 		t.Error(err)
 	}
