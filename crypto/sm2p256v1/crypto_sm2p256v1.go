@@ -4,10 +4,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"lattice-go/crypto"
-	"lattice-go/crypto/constant"
-
+	"encoding/hex"
+	"errors"
+	"fmt"
 	"github.com/tjfoc/gmsm/sm2"
+	"lattice-go/common/types"
+	"lattice-go/crypto"
 )
 
 func New() crypto.CryptographyApi {
@@ -15,7 +17,6 @@ func New() crypto.CryptographyApi {
 }
 
 type sm2p256v1Api struct {
-	curve constant.Curve
 }
 
 // GenerateKeyPair 生成密钥对
@@ -39,6 +40,57 @@ func (i *sm2p256v1Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	privateKey.PublicKey = *publicKey
 
 	return privateKey, nil
+}
+
+func (i *sm2p256v1Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
+	if sk == nil {
+		return nil, errors.New("sk is nil")
+	}
+	length := sk.Params().BitSize / 8
+	if sk.D.BitLen()/8 > length {
+		return sk.D.Bytes(), errors.New("sk is too big")
+	}
+
+	bytes := make([]byte, length)
+	// padding zero on the top of arr
+	copy(bytes[len(bytes)-len(sk.D.Bytes()):], sk.D.Bytes())
+	return bytes, nil
+}
+
+// SKToHexString 将私钥转为hex string
+func (i *sm2p256v1Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
+	bytes, err := i.SKToBytes(sk)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
+}
+
+// PKToBytes 将公钥转为[]byte
+func (i *sm2p256v1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
+	if pk == nil || pk.X == nil || pk.Y == nil {
+		return nil, errors.New("pk is invalid")
+	}
+
+	return elliptic.Marshal(sm2.P256Sm2(), pk.X, pk.Y), nil
+}
+
+// PKToHexString 将公钥转为hex string
+func (i *sm2p256v1Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
+	bytes, err := i.PKToBytes(pk)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
+}
+
+func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
+	bytes, err := i.PKToBytes(pk)
+	if err != nil {
+		return types.Address{}, err
+	}
+	fmt.Println(bytes)
+	return types.Address{}, nil
 }
 
 // Sign 签名
@@ -68,5 +120,5 @@ func (i *sm2p256v1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 
 // GetCurve 获取椭圆曲线
 func (i *sm2p256v1Api) GetCurve() elliptic.Curve {
-	return nil
+	return sm2.P256Sm2()
 }

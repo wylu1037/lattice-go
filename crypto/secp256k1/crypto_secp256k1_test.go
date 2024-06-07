@@ -1,6 +1,8 @@
 package secp256k1
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSecp256k1Api_GenerateKeyPair(t *testing.T) {
 	sk, err := New().GenerateKeyPair()

@@ -3,11 +3,22 @@ package crypto
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"lattice-go/common/types"
 )
 
 type CryptographyApi interface {
 	// GenerateKeyPair 生成密钥对
 	GenerateKeyPair() (*ecdsa.PrivateKey, error)
+	// SKToBytes 将私钥转为[]byte
+	SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error)
+	// SKToHexString 将私钥转为hex string
+	SKToHexString(sk *ecdsa.PrivateKey) (string, error)
+	// PKToBytes 将公钥转为[]byte
+	PKToBytes(pk *ecdsa.PublicKey) ([]byte, error)
+	// PKToHexString 将公钥转为hex string
+	PKToHexString(pk *ecdsa.PublicKey) (string, error)
+	// PKToAddress 将公钥转为地址
+	PKToAddress(pk *ecdsa.PublicKey) (types.Address, error)
 	// Sign 签名
 	Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error)
 	// SignatureToPK 从签名恢复公钥

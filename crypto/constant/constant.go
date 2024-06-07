@@ -1,11 +1,10 @@
 package constant
 
-// Curve Elliptic curve
-type Curve string
+import "lattice-go/common/types"
 
 const (
-	Secp256k1 Curve = "secp256k1"
-	Sm2p256v1 Curve = "sm2p256v1"
+	Secp256k1 types.Curve = "secp256k1"
+	Sm2p256v1 types.Curve = "sm2p256v1"
 )
 
 const (

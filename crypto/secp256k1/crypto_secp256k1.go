@@ -5,8 +5,8 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"lattice-go/common/types"
 	"lattice-go/crypto"
-	"lattice-go/crypto/constant"
 )
 
 func New() crypto.CryptographyApi {
@@ -14,7 +14,6 @@ func New() crypto.CryptographyApi {
 }
 
 type secp256k1Api struct {
-	curve constant.Curve
 }
 
 func (i *secp256k1Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
@@ -24,6 +23,29 @@ func (i *secp256k1Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	}
 
 	return sk, nil
+}
+
+func (i *secp256k1Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
+	return nil, nil
+}
+
+// SKToHexString 将私钥转为hex string
+func (i *secp256k1Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
+	return "", nil
+}
+
+// PKToBytes 将公钥转为[]byte
+func (i *secp256k1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
+	return nil, nil
+}
+
+// PKToHexString 将公钥转为hex string
+func (i *secp256k1Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
+	return "", nil
+}
+
+func (i *secp256k1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
+	return types.Address{}, nil
 }
 
 func (i *secp256k1Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
@@ -52,5 +74,5 @@ func (i *secp256k1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 
 // GetCurve 获取椭圆曲线
 func (i *secp256k1Api) GetCurve() elliptic.Curve {
-	return nil
+	return secp256k1.S256()
 }
