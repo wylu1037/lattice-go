@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"lattice-go/common/constant"
+	"lattice-go/common/convert"
 	"math"
 	"math/big"
 	"reflect"
@@ -120,10 +122,18 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 			fmt.Println(i, elem)
 			return nil, nil
 		}
-	// return string
+	// return string, Example: input`zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi`, output`0x5f2be9a02b43f748ee460bf36eed24fafa109920`
 	case abi.AddressTy:
 		if s, ok := param.(string); ok {
-			return s, nil
+			if strings.HasPrefix(s, constant.HexPrefix) {
+				return s, nil
+			} else if strings.HasPrefix(s, constant.AddressTitle) {
+				address, err := convert.ZltcToAddress(s)
+				if err != nil {
+					return nil, fmt.Errorf("invalid base58 address: %s", s)
+				}
+				return address.Hex(), nil
+			}
 		} else {
 			return nil, fmt.Errorf("address need string type, but now is: %T", param)
 		}
