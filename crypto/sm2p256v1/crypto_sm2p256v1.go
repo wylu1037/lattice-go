@@ -7,9 +7,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tjfoc/gmsm/sm2"
+	"lattice-go/common/constant"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
+	"math/big"
+)
+
+var (
+	secp256k1N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
+	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
 func New() crypto.CryptographyApi {
@@ -66,6 +74,15 @@ func (i *sm2p256v1Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
 }
 
+func (i *sm2p256v1Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
+	bytes, err := hexutil.Decode(skHex)
+	if err != nil {
+		return nil, err
+	}
+
+	return i.hexStringToSK(bytes, true)
+}
+
 // PKToBytes 将公钥转为[]byte
 func (i *sm2p256v1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 	if pk == nil || pk.X == nil || pk.Y == nil {
@@ -84,6 +101,23 @@ func (i *sm2p256v1Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
 }
 
+func (i *sm2p256v1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
+	bytes, err := hexutil.Decode(skHex)
+	if err != nil {
+		return nil, err
+	}
+	x, y := elliptic.Unmarshal(i.GetCurve(), bytes)
+	if x == nil {
+		return nil, fmt.Errorf("invalid public key")
+	}
+
+	return &ecdsa.PublicKey{
+		Curve: i.GetCurve(),
+		X:     x,
+		Y:     y,
+	}, nil
+}
+
 func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
@@ -95,11 +129,43 @@ func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
 
 // Sign 签名
 func (i *sm2p256v1Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
-	return nil, nil
+	if len(hash) != constant.HashLength {
+		return nil, fmt.Errorf("hash is required to be exactly 32 bytes (%d)", len(hash))
+	}
+
+	privateKey := &sm2.PrivateKey{
+		PublicKey: sm2.PublicKey{
+			Curve: sk.Curve,
+			X:     sk.X,
+			Y:     sk.Y,
+		},
+		D: sk.D,
+	}
+	signature, err = privateKey.Sign(rand.Reader, hash, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(signature) != 65 {
+		return nil, errors.New(fmt.Sprintf("sig length is wrong !!! sig length is %d ", len(signature)))
+	}
+
+	// calculate E
+	digest, err := privateKey.PublicKey.Sm3Digest(hash, nil)
+	if err != nil {
+		return nil, err
+	}
+	e := new(big.Int).SetBytes(digest)
+
+	var pad [32]byte
+	buffer := e.Bytes()
+	copy(pad[32-len(buffer):], buffer)
+	signature = append(signature, pad[:]...)
+	return signature, nil
 }
 
 // SignatureToPK 从签名恢复公钥
 func (i *sm2p256v1Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
+	_ = new(big.Int).SetBytes(signature[65:])
 	return nil, nil
 }
 
@@ -121,4 +187,29 @@ func (i *sm2p256v1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 // GetCurve 获取椭圆曲线
 func (i *sm2p256v1Api) GetCurve() elliptic.Curve {
 	return sm2.P256Sm2()
+}
+
+func (i *sm2p256v1Api) hexStringToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
+	privateKey := new(ecdsa.PrivateKey)
+	privateKey.PublicKey.Curve = i.GetCurve()
+	if strict && 8*len(skBytes) != privateKey.Params().BitSize {
+		return nil, errors.New("skBytes length is wrong")
+	}
+
+	privateKey.D = new(big.Int).SetBytes(skBytes)
+
+	// The priv.D must < N
+	if privateKey.D.Cmp(secp256k1N) >= 0 {
+		return nil, fmt.Errorf("invalid private key, >=N")
+	}
+	// The priv.D must not be zero or negative.
+	if privateKey.D.Sign() <= 0 {
+		return nil, fmt.Errorf("invalid private key, zero or negative")
+	}
+
+	privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(skBytes)
+	if privateKey.PublicKey.X == nil {
+		return nil, errors.New("invalid private key")
+	}
+	return privateKey, nil
 }

@@ -13,10 +13,14 @@ type CryptographyApi interface {
 	SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error)
 	// SKToHexString 将私钥转为hex string
 	SKToHexString(sk *ecdsa.PrivateKey) (string, error)
+	// HexToSK 将hex字符串的私钥转为私钥
+	HexToSK(skHex string) (*ecdsa.PrivateKey, error)
 	// PKToBytes 将公钥转为[]byte
 	PKToBytes(pk *ecdsa.PublicKey) ([]byte, error)
 	// PKToHexString 将公钥转为hex string
 	PKToHexString(pk *ecdsa.PublicKey) (string, error)
+	// HexToPK 将hex字符串的公钥转为公钥
+	HexToPK(skHex string) (*ecdsa.PublicKey, error)
 	// PKToAddress 将公钥转为地址
 	PKToAddress(pk *ecdsa.PublicKey) (types.Address, error)
 	// Sign 签名

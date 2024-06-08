@@ -34,6 +34,10 @@ func (i *secp256k1Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	return "", nil
 }
 
+func (i *secp256k1Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
+	return nil, nil
+}
+
 // PKToBytes 将公钥转为[]byte
 func (i *secp256k1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 	return nil, nil
@@ -42,6 +46,10 @@ func (i *secp256k1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 // PKToHexString 将公钥转为hex string
 func (i *secp256k1Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return "", nil
+}
+
+func (i *secp256k1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
+	return nil, nil
 }
 
 func (i *secp256k1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
