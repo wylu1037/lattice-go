@@ -10,8 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tjfoc/gmsm/sm2"
 	"lattice-go/common/constant"
+	"lattice-go/common/convert"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
+	cryptoConstant "lattice-go/crypto/constant"
 	"math/big"
 )
 
@@ -133,18 +135,18 @@ func (i *sm2p256v1Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte
 		return nil, fmt.Errorf("hash is required to be exactly 32 bytes (%d)", len(hash))
 	}
 
-	privateKey := &sm2.PrivateKey{
-		PublicKey: sm2.PublicKey{
-			Curve: sk.Curve,
-			X:     sk.X,
-			Y:     sk.Y,
-		},
-		D: sk.D,
-	}
-	signature, err = privateKey.Sign(rand.Reader, hash, nil)
+	privateKey := convert.EcdsaSKToSm2SK(sk)
+	// use default uid: []byte{0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38}
+	r, s, err := sm2.Sm2Sign(privateKey, hash, nil, rand.Reader)
 	if err != nil {
 		return nil, err
 	}
+
+	signature = make([]byte, 65)
+	copy(signature[32-len(r.Bytes()):], r.Bytes())
+	copy(signature[64-len(s.Bytes()):], s.Bytes())
+	signature[64] = cryptoConstant.Sm2p256v1SignatureRemark
+
 	if len(signature) != 65 {
 		return nil, errors.New(fmt.Sprintf("sig length is wrong !!! sig length is %d ", len(signature)))
 	}
@@ -170,18 +172,26 @@ func (i *sm2p256v1Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, 
 }
 
 // Verify 验证签名
-func (i *sm2p256v1Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) error {
-	return nil
+func (i *sm2p256v1Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
+	r := new(big.Int).SetBytes(signature[:32])
+	s := new(big.Int).SetBytes(signature[32:64])
+	return sm2.Sm2Verify(convert.EcdsaPKToSm2PK(pk), hash, nil, r, s)
 }
 
 // CompressPK 压缩公钥
 func (i *sm2p256v1Api) CompressPK(pk *ecdsa.PublicKey) []byte {
-	return nil
+	if pk == nil || pk.X == nil || pk.Y == nil {
+		return nil
+	}
+	return sm2.Compress(convert.EcdsaPKToSm2PK(pk))
 }
 
 // DecompressPK 解压缩公钥
 func (i *sm2p256v1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
-	return nil, nil
+	if len(pk) != 33 {
+		return nil, errors.New(fmt.Sprintf("DecompressPubKey length is wrong !,lenth is %d", len(pk)))
+	}
+	return convert.Sm2PKToEcdsaPK(sm2.Decompress(pk)), nil
 }
 
 // GetCurve 获取椭圆曲线

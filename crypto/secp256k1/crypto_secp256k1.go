@@ -66,8 +66,8 @@ func (i *secp256k1Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, 
 }
 
 // Verify 验证签名
-func (i *secp256k1Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) error {
-	return nil
+func (i *secp256k1Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
+	return true
 }
 
 // CompressPK 压缩公钥

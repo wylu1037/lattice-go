@@ -2,6 +2,7 @@ package sm2p256v1
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"testing"
 )
 
@@ -32,4 +33,24 @@ func TestSm2p256v1Api_HexToSK(t *testing.T) {
 		t.Error(err)
 	}
 	fmt.Println(crypto.PKToHexString(&priv.PublicKey))
+}
+
+func TestSm2p256v1Api_Sign(t *testing.T) {
+	crypto := New()
+	sk, err := crypto.GenerateKeyPair()
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(crypto.SKToHexString(sk))
+	fmt.Println(crypto.PKToHexString(&sk.PublicKey))
+
+	hash := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
+	signature, err := crypto.Sign(hash, sk)
+	if err != nil {
+		t.Error(err)
+	} else {
+		fmt.Println(hexutil.Encode(signature))
+	}
+	pass := crypto.Verify(hash, signature, &sk.PublicKey)
+	fmt.Println(pass)
 }

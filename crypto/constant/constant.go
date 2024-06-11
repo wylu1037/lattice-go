@@ -8,6 +8,7 @@ const (
 )
 
 const (
-	Sm2p256v1SignatureLength = 97 // uint is char, Example:
-	Secp256k1SignatureLength = 65
+	Sm2p256v1SignatureLength      = 97 // uint is char, Example:
+	Secp256k1SignatureLength      = 65
+	Sm2p256v1SignatureRemark byte = 1
 )

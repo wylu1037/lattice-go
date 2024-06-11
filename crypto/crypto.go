@@ -28,7 +28,7 @@ type CryptographyApi interface {
 	// SignatureToPK 从签名恢复公钥
 	SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error)
 	// Verify 验证签名
-	Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) error
+	Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool
 	// CompressPK 压缩公钥
 	CompressPK(pk *ecdsa.PublicKey) []byte
 	// DecompressPK 解压缩公钥
