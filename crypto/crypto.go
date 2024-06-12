@@ -3,7 +3,7 @@ package crypto
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"lattice-go/common/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type CryptographyApi interface {
@@ -22,7 +22,7 @@ type CryptographyApi interface {
 	// HexToPK 将hex字符串的公钥转为公钥
 	HexToPK(skHex string) (*ecdsa.PublicKey, error)
 	// PKToAddress 将公钥转为地址
-	PKToAddress(pk *ecdsa.PublicKey) (types.Address, error)
+	PKToAddress(pk *ecdsa.PublicKey) (common.Address, error)
 	// Sign 签名
 	Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error)
 	// SignatureToPK 从签名恢复公钥

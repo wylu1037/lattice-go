@@ -16,6 +16,7 @@ func NewAbi(abiString string) LatticeAbi {
 
 type LatticeAbi interface {
 	Function(method string) (*abi.Method, error)
+	NewLatticeFunction(methodName string, args []interface{}) (LatticeFunction, error)
 }
 
 type latticeAbi struct {
@@ -33,14 +34,22 @@ func FromJson(abiString string) *abi.ABI {
 	return &myAbi
 }
 
-func (i *latticeAbi) Function(method string) (*abi.Method, error) {
-	if m, ok := i.abi.Methods[method]; ok {
+func (i *latticeAbi) Function(methodName string) (*abi.Method, error) {
+	if m, ok := i.abi.Methods[methodName]; ok {
 		return &m, nil
 	} else {
-		return nil, fmt.Errorf("method %s not found", method)
+		return nil, fmt.Errorf("method %s not found", methodName)
 	}
 }
 
 func (i *latticeAbi) Constructor() *abi.Method {
 	return &i.abi.Constructor
+}
+
+func (i *latticeAbi) NewLatticeFunction(methodName string, args []interface{}) (LatticeFunction, error) {
+	method, err := i.Function(methodName)
+	if err != nil {
+		return nil, err
+	}
+	return NewLatticeFunction(i.abiString, i.abi, methodName, args, method), nil
 }

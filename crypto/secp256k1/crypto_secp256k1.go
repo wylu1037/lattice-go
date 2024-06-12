@@ -4,8 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"lattice-go/common/types"
 	"lattice-go/crypto"
 )
 
@@ -52,8 +52,8 @@ func (i *secp256k1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
 	return nil, nil
 }
 
-func (i *secp256k1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
-	return types.Address{}, nil
+func (i *secp256k1Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
+	return common.Address{}, nil
 }
 
 func (i *secp256k1Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {

@@ -3,6 +3,8 @@ package sm2p256v1
 import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/stretchr/testify/assert"
+	"lattice-go/common/convert"
 	"testing"
 )
 
@@ -53,4 +55,15 @@ func TestSm2p256v1Api_Sign(t *testing.T) {
 	}
 	pass := crypto.Verify(hash, signature, &sk.PublicKey)
 	fmt.Println(pass)
+}
+
+func TestSm2p256v1Api_PKToAddress(t *testing.T) {
+	crypto := New()
+	sk, err := crypto.GenerateKeyPair()
+	assert.Nil(t, err)
+	addr, err := crypto.PKToAddress(&sk.PublicKey)
+	assert.Nil(t, err)
+	t.Log("ETH Address:", addr.Hex())
+	t.Log("ZLTC Address:", convert.AddressToZltc(addr))
+	assert.Len(t, addr, 20)
 }

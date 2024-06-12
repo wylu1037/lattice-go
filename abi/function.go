@@ -2,7 +2,9 @@ package abi
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	abi2 "github.com/defiweb/go-eth/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -15,15 +17,60 @@ import (
 	"strings"
 )
 
+func NewLatticeFunction(
+	abiString string,
+	abi *abi.ABI,
+	methodName string,
+	args []interface{},
+	method *abi.Method) LatticeFunction {
+	return &latticeFunction{
+		abiString:  abiString,
+		abi:        abi,
+		methodName: methodName,
+		args:       args,
+		method:     method,
+	}
+}
+
 type LatticeFunction interface {
+	Encode() (string, error)
 }
 
 type latticeFunction struct {
-	method *abi.Method
+	abiString  string
+	abi        *abi.ABI
+	methodName string
+	args       []interface{}
+	method     *abi.Method
 }
 
-func (f *latticeFunction) Encode() string {
-	return f.method.Name
+func (f *latticeFunction) Encode() (string, error) {
+	var err error
+	convertedArgs, err := f.ConvertArguments(f.method.Inputs, f.args)
+	if err != nil {
+		return "", err
+	}
+
+	var data []byte
+	if f.inputsContainsTuple() || f.inputsContainsSlice() {
+		contract, err := abi2.ParseJSON([]byte(f.abiString))
+		if err != nil {
+			return "", err
+		}
+		m, ok := contract.Methods[f.methodName]
+		if !ok {
+			return "", errors.New(fmt.Sprintf("no such method: %s", f.methodName))
+		}
+		if data, err = m.EncodeArgs(convertedArgs...); err != nil {
+			return "", err
+		}
+	} else {
+		if data, err = f.abi.Pack(f.methodName, convertedArgs...); err != nil {
+			return "", err
+		}
+	}
+
+	return hexutil.Encode(data), nil
 }
 
 func (f *latticeFunction) Decode() []interface{} {
@@ -52,6 +99,7 @@ func (f *latticeFunction) ConvertArguments(args abi.Arguments, params []interfac
 func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (interface{}, error) {
 	size := abiType.Size
 	switch abiType.T {
+	// Input example: "100"
 	case abi.IntTy, abi.UintTy:
 		if j, ok := param.(json.Number); ok {
 			param = string(j)
@@ -76,9 +124,9 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 		case reflect.Float64, reflect.Float32:
 			return nil, fmt.Errorf("floating point numbers are not valid in web3 - please use an integer or string instead (including big.Int and json.Number)")
 		default:
-			return nil, fmt.Errorf("unsupported argument type: %T", param)
+			return nil, fmt.Errorf("unsupported argument type: %T, int type or uint type expect string number value", param)
 		}
-	// Example: true or "true"
+	// Input example: true or "true"
 	case abi.BoolTy:
 		if b, ok := param.(bool); ok {
 			return b, nil
@@ -88,15 +136,17 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 				return nil, fmt.Errorf("failed to parse bool %q: %v", s, err)
 			}
 			return val, nil
+		} else {
+			return nil, fmt.Errorf("unsupported argument type: %T, bool type expect string or bool value", param)
 		}
-	// Example: "School"
+	// Input example: "School"
 	case abi.StringTy:
 		if s, ok := param.(string); ok {
 			return s, nil
 		} else {
-			return nil, fmt.Errorf("arg need string type, but now is %T", param)
+			return nil, fmt.Errorf("unsupported argument type: %T, string type expect string value", param)
 		}
-	// Example: ["apple", "banana"] | [1, 2, 3]
+	// Input example: ["apple", "banana"] | [1, 2, 3]
 	case abi.SliceTy, abi.ArrayTy:
 		r := reflect.ValueOf(param)
 		inputArray := make([]interface{}, 0)
@@ -118,10 +168,15 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 			}
 		}
 
-		for i, elem := range inputArray {
-			fmt.Println(i, elem)
-			return nil, nil
+		convertedArgs := make([]interface{}, len(inputArray))
+		for i, input := range inputArray {
+			convertedArg, err := f.ConvertArgument(*abiType.Elem, input)
+			if err != nil {
+				return nil, err
+			}
+			convertedArgs[i] = convertedArg
 		}
+		return convertedArgs, nil
 	// return string, Example: input`zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi`, output`0x5f2be9a02b43f748ee460bf36eed24fafa109920`
 	case abi.AddressTy:
 		if s, ok := param.(string); ok {
@@ -135,9 +190,9 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 				return address.Hex(), nil
 			}
 		} else {
-			return nil, fmt.Errorf("address need string type, but now is: %T", param)
+			return nil, fmt.Errorf("unsupported argument type: %T, address type expect hex string(42) or zltc address(38) value", param)
 		}
-	// "0x5f2be9a02b43f748ee460bf36eed24fafa109920"
+	// Input example: "0x5f2be9a02b43f748ee460bf36eed24fafa109920"
 	case abi.BytesTy:
 		if s, ok := param.(string); ok {
 			if strings.HasPrefix(s, "0x") {
@@ -145,14 +200,20 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 				if err != nil {
 					return nil, fmt.Errorf("failed to decode bytes: %v", err)
 				}
-				return common.BytesToAddress(bytes), nil
+				return bytes, nil
 			} else if strings.HasPrefix(s, "zltc") {
-
+				addr, err := convert.ZltcToAddress(s)
+				if err != nil {
+					return nil, fmt.Errorf("failed to convert %s to common.Address,  %v", s, err)
+				}
+				return addr.Bytes(), nil
 			} else {
-				return nil, fmt.Errorf("invalid bytes type: %s", s)
+				return nil, fmt.Errorf("invalid bytes type: %s, you can input hex string or zltc addr", s)
 			}
+		} else {
+			return nil, fmt.Errorf("unsupported argument type: %T, bytes type expect hex string or zltc address(38) value", param)
 		}
-	// "0x5f2be9a02b43f748ee460bf36eed24fafa109920", return common.Hash
+	// Input example: "0x5f2be9a02b43f748ee460bf36eed24fafa109920", return common.Hash
 	case abi.HashTy:
 		if s, ok := param.(string); ok {
 			bytes, err := hexutil.Decode(s)
@@ -163,13 +224,35 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 				return nil, fmt.Errorf("invalid hash length %d:hash must be 32 bytes", len(bytes))
 			}
 			return common.BytesToHash(bytes), nil
+		} else {
+			return nil, fmt.Errorf("unsupported argument type: %T, hash type expect hex string value", param)
 		}
-
 	case abi.FixedBytesTy:
 		return nil, fmt.Errorf("arg need string type, but now is %T", param)
-	// struct and tuple
+	// struct and tuple, Return type: Map, Return example: {"name": "Jack", "age": 28}
 	case abi.TupleTy:
-		return nil, fmt.Errorf("unsupported input type %v", abiType)
+		// See: https://github.com/defiweb/go-eth
+		// contract := MustParseJSON([]byte(`[{"inputs":[],"name":"get","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"components":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"string","name":"name","type":"string"},{"internalType":"bool","name":"isMan","type":"bool"},{"internalType":"string[]","name":"tags","type":"string[]"}],"internalType":"struct Test.User","name":"user","type":"tuple"}],"name":"set","outputs":[],"stateMutability":"nonpayable","type":"function"}]`))
+		// method := contract.Methods["set"]
+		// encodedData, err := method.EncodeArgs(map[string]interface{}{
+		//		"id":    big.NewInt(18),
+		//		"name":  "Jack",
+		//		"isMan": true,
+		//		"tags":  []string{"Hello, world!"},
+		//	})
+		encodedArgsMap := make(map[string]interface{})
+		keys := abiType.TupleRawNames
+
+		paramsArr := param.([]interface{})
+		for i, elem := range abiType.TupleElems {
+			convertedArg, err := f.ConvertArgument(*elem, paramsArr[i])
+			if err != nil {
+				return nil, err
+			}
+			encodedArgsMap[keys[i]] = convertedArg
+		}
+
+		return encodedArgsMap, nil
 	// 固定精度的小数类型
 	case abi.FixedPointTy:
 		return nil, fmt.Errorf("unsupported input type %v", abiType)
@@ -248,4 +331,36 @@ func convertUnsignedInt(size int, i *big.Int) (interface{}, error) {
 		}
 		return uint8(uint64Val), nil
 	}
+}
+
+// 检查合约的入参是否包含元组或者结构体
+// Parameters
+//
+// Returns
+//   - bool: false-不包含，true-包含
+func (f *latticeFunction) inputsContainsTuple() bool {
+	contains := false
+	for _, arg := range f.method.Inputs {
+		if len(arg.Type.TupleElems) > 0 {
+			contains = true
+			break
+		}
+	}
+	return contains
+}
+
+// 检查合约的入参是否包含切片和数组
+// Parameters
+//
+// Returns
+//   - bool: false-不包含，true-包含
+func (f *latticeFunction) inputsContainsSlice() bool {
+	contains := false
+	for _, arg := range f.method.Inputs {
+		if arg.Type.T == abi.SliceTy || arg.Type.T == abi.ArrayTy {
+			contains = true
+			break
+		}
+	}
+	return contains
 }

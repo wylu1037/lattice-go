@@ -7,11 +7,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tjfoc/gmsm/sm2"
 	"lattice-go/common/constant"
 	"lattice-go/common/convert"
-	"lattice-go/common/types"
 	"lattice-go/crypto"
 	cryptoConstant "lattice-go/crypto/constant"
 	"math/big"
@@ -120,13 +120,12 @@ func (i *sm2p256v1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
-func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (types.Address, error) {
+func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
-		return types.Address{}, err
+		return common.Address{}, err
 	}
-	fmt.Println(bytes)
-	return types.Address{}, nil
+	return common.BytesToAddress(bytes), nil
 }
 
 // Sign 签名
