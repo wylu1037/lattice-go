@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tjfoc/gmsm/sm2"
+	"github.com/tjfoc/gmsm/sm3"
+	"io"
 	"lattice-go/common/constant"
 	"lattice-go/common/convert"
 	"lattice-go/crypto"
@@ -120,6 +122,13 @@ func (i *sm2p256v1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
+// PKToAddress 将公钥(取后20位字节)转为地址
+// Parameters
+//   - pk *ecdsa.PublicKey: 公钥
+//
+// Returns
+//   - common.Address: 地址
+//   - error
 func (i *sm2p256v1Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
@@ -221,4 +230,11 @@ func (i *sm2p256v1Api) hexStringToSK(skBytes []byte, strict bool) (*ecdsa.Privat
 		return nil, errors.New("invalid private key")
 	}
 	return privateKey, nil
+}
+
+func (i *sm2p256v1Api) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
+	hash := sm3.New()
+	encodeFunc(hash)
+	hash.Sum(h[:0])
+	return h
 }

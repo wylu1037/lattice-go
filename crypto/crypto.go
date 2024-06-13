@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"github.com/ethereum/go-ethereum/common"
+	"io"
 )
 
 type CryptographyApi interface {
@@ -35,4 +36,6 @@ type CryptographyApi interface {
 	DecompressPK(pk []byte) (*ecdsa.PublicKey, error)
 	// GetCurve 获取椭圆曲线
 	GetCurve() elliptic.Curve
+	// EncodeHash Rlp encode and hash
+	EncodeHash(encodeFunc func(io.Writer)) common.Hash
 }

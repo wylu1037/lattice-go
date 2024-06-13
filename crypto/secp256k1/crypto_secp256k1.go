@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"io"
 	"lattice-go/crypto"
 )
 
@@ -83,4 +84,8 @@ func (i *secp256k1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 // GetCurve 获取椭圆曲线
 func (i *secp256k1Api) GetCurve() elliptic.Curve {
 	return secp256k1.S256()
+}
+
+func (i *secp256k1Api) EncodeHash(func(io.Writer)) common.Hash {
+	return common.Hash{}
 }

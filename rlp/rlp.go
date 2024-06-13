@@ -1,1 +1,5 @@
 package rlp
+
+func EncodeTx() {
+
+}
