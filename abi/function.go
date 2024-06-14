@@ -52,7 +52,7 @@ func (f *latticeFunction) Encode() (string, error) {
 	}
 
 	var data []byte
-	if f.inputsContainsTuple() || f.inputsContainsSlice() {
+	if f.inputsContainsTuple() {
 		contract, err := abi2.ParseJSON([]byte(f.abiString))
 		if err != nil {
 			return "", err
@@ -176,6 +176,47 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 			}
 			convertedArgs[i] = convertedArg
 		}
+
+		switch abiType.Elem.T {
+		case abi.StringTy:
+			stringArr := make([]string, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				stringArr[i] = converted.(string)
+			}
+			return stringArr, nil
+		case abi.AddressTy:
+			addressArr := make([]common.Address, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				addressArr[i] = converted.(common.Address)
+			}
+			return addressArr, nil
+		case abi.BoolTy:
+			boolArr := make([]bool, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				boolArr[i] = converted.(bool)
+			}
+			return boolArr, nil
+		case abi.BytesTy:
+			bytesArr := make([][]byte, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				bytesArr[i] = converted.([]byte)
+			}
+		case abi.HashTy:
+			hashArr := make([]common.Hash, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				hashArr[i] = converted.(common.Hash)
+			}
+			return hashArr, nil
+		case abi.TupleTy:
+			tupleArr := make([]map[string]interface{}, len(convertedArgs))
+			for i, converted := range convertedArgs {
+				tupleArr[i] = converted.(map[string]interface{})
+			}
+			return tupleArr, nil
+		case abi.FixedBytesTy, abi.FixedPointTy, abi.FunctionTy:
+		default:
+		}
+
 		return convertedArgs, nil
 	// return string, Example: input`zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi`, output`0x5f2be9a02b43f748ee460bf36eed24fafa109920`
 	case abi.AddressTy:
@@ -187,7 +228,7 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 				if err != nil {
 					return nil, fmt.Errorf("invalid base58 address: %s", s)
 				}
-				return address.Hex(), nil
+				return address, nil
 			}
 		} else {
 			return nil, fmt.Errorf("unsupported argument type: %T, address type expect hex string(42) or zltc address(38) value", param)
