@@ -35,7 +35,9 @@ type CryptographyApi interface {
 	// PKToHexString 将公钥转为hex string
 	PKToHexString(pk *ecdsa.PublicKey) (string, error)
 	// HexToPK 将hex字符串的公钥转为公钥
-	HexToPK(skHex string) (*ecdsa.PublicKey, error)
+	HexToPK(pkHex string) (*ecdsa.PublicKey, error)
+	// BytesToPK 将[]byte转为公钥
+	BytesToPK(pk []byte) (*ecdsa.PublicKey, error)
 	// PKToAddress 将公钥转为地址
 	PKToAddress(pk *ecdsa.PublicKey) (common.Address, error)
 	// Sign 签名

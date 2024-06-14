@@ -91,7 +91,7 @@ func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 		return nil, errors.New("pk is invalid")
 	}
 
-	return elliptic.Marshal(sm2.P256Sm2(), pk.X, pk.Y), nil
+	return elliptic.Marshal(i.GetCurve(), pk.X, pk.Y), nil
 }
 
 // PKToHexString 将公钥转为hex string
@@ -103,12 +103,17 @@ func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
 }
 
-func (i *Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
-	bytes, err := hexutil.Decode(skHex)
+func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
+	bytes, err := hexutil.Decode(pkHex)
 	if err != nil {
 		return nil, err
 	}
-	x, y := elliptic.Unmarshal(i.GetCurve(), bytes)
+
+	return i.BytesToPK(bytes)
+}
+
+func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
+	x, y := elliptic.Unmarshal(i.GetCurve(), pkBytes)
 	if x == nil {
 		return nil, fmt.Errorf("invalid public key")
 	}
@@ -173,7 +178,10 @@ func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err err
 
 // SignatureToPK 从签名恢复公钥
 func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
-	_ = new(big.Int).SetBytes(signature[65:])
+	e := new(big.Int).SetBytes(signature[65:])
+	signature = signature[:65]
+
+	fmt.Println(e)
 	return nil, nil
 }
 
