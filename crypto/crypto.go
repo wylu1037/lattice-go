@@ -5,7 +5,21 @@ import (
 	"crypto/elliptic"
 	"github.com/ethereum/go-ethereum/common"
 	"io"
+	"lattice-go/common/types"
+	"lattice-go/crypto/secp256k1"
+	"lattice-go/crypto/sm2p256v1"
 )
+
+func NewCrypto(curve types.Curve) CryptographyApi {
+	switch curve {
+	case Sm2p256v1:
+		return sm2p256v1.New()
+	case Secp256k1:
+		return secp256k1.New()
+	default:
+		return sm2p256v1.New()
+	}
+}
 
 type CryptographyApi interface {
 	// GenerateKeyPair 生成密钥对

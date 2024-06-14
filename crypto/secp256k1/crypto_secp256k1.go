@@ -7,17 +7,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
-	"lattice-go/crypto"
 )
 
-func New() crypto.CryptographyApi {
-	return &secp256k1Api{}
+func New() *Api {
+	return &Api{}
 }
 
-type secp256k1Api struct {
+type Api struct {
 }
 
-func (i *secp256k1Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
+func (i *Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	sk, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
@@ -26,66 +25,66 @@ func (i *secp256k1Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	return sk, nil
 }
 
-func (i *secp256k1Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
+func (i *Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
 	return nil, nil
 }
 
 // SKToHexString 将私钥转为hex string
-func (i *secp256k1Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
+func (i *Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	return "", nil
 }
 
-func (i *secp256k1Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
+func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 	return nil, nil
 }
 
 // PKToBytes 将公钥转为[]byte
-func (i *secp256k1Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
+func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 	return nil, nil
 }
 
 // PKToHexString 将公钥转为hex string
-func (i *secp256k1Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
+func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return "", nil
 }
 
-func (i *secp256k1Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
+func (i *Api) HexToPK(skHex string) (*ecdsa.PublicKey, error) {
 	return nil, nil
 }
 
-func (i *secp256k1Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
+func (i *Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	return common.Address{}, nil
 }
 
-func (i *secp256k1Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
+func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
 	return nil, nil
 }
 
 // SignatureToPK 从签名恢复公钥
-func (i *secp256k1Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
+func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
 	return nil, nil
 }
 
 // Verify 验证签名
-func (i *secp256k1Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
+func (i *Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
 	return true
 }
 
 // CompressPK 压缩公钥
-func (i *secp256k1Api) CompressPK(pk *ecdsa.PublicKey) []byte {
+func (i *Api) CompressPK(pk *ecdsa.PublicKey) []byte {
 	return nil
 }
 
 // DecompressPK 解压缩公钥
-func (i *secp256k1Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
+func (i *Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 	return nil, nil
 }
 
 // GetCurve 获取椭圆曲线
-func (i *secp256k1Api) GetCurve() elliptic.Curve {
+func (i *Api) GetCurve() elliptic.Curve {
 	return secp256k1.S256()
 }
 
-func (i *secp256k1Api) EncodeHash(func(io.Writer)) common.Hash {
+func (i *Api) EncodeHash(func(io.Writer)) common.Hash {
 	return common.Hash{}
 }
