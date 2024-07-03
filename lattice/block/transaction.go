@@ -5,12 +5,14 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"io"
 	"lattice-go/common/types"
+	"lattice-go/crypto"
+	"lattice-go/crypto/secp256k1"
 	"lattice-go/crypto/sm2p256v1"
 	"math/big"
 )
 
 type Transaction struct {
-	Number      int64         `json:"number"`
+	Height      int64         `json:"number"`
 	Type        string        `json:"type"`
 	ParentHash  common.Hash   `json:"parentHash"`
 	Hub         []common.Hash `json:"hub"`
@@ -34,10 +36,27 @@ type Transaction struct {
 	ApplyHash   string        `json:"applyHash"`
 }
 
+// RlpEncodeHash 对交易进行rlp编码并计算哈希
+// Parameters:
+//   - chainId *big.Int: 区块链ID
+//   - curve types.Curve: 椭圆曲线
+//
+// Returns:
+//   - common.Hash: 哈希
 func (tx *Transaction) RlpEncodeHash(chainId *big.Int, curve types.Curve) common.Hash {
-	return sm2p256v1.New().EncodeHash(func(writer io.Writer) {
+	var cryptoInstance crypto.CryptographyApi
+	switch curve {
+	case crypto.Sm2p256v1:
+		cryptoInstance = sm2p256v1.New()
+	case crypto.Secp256k1:
+		cryptoInstance = secp256k1.New()
+	default:
+		cryptoInstance = sm2p256v1.New()
+	}
+
+	return cryptoInstance.EncodeHash(func(writer io.Writer) {
 		err := rlp.Encode(writer, []interface{}{
-			tx.Number,
+			tx.Height,
 			tx.Type,
 			tx.ParentHash,
 			tx.Hub,
