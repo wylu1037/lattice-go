@@ -16,7 +16,7 @@ func NewAbi(abiString string) LatticeAbi {
 
 type LatticeAbi interface {
 	Function(method string) (*abi.Method, error)
-	NewLatticeFunction(methodName string, args []interface{}) (LatticeFunction, error)
+	GetLatticeFunction(methodName string, args ...interface{}) (LatticeFunction, error)
 }
 
 type latticeAbi struct {
@@ -46,7 +46,7 @@ func (i *latticeAbi) Constructor() *abi.Method {
 	return &i.abi.Constructor
 }
 
-func (i *latticeAbi) NewLatticeFunction(methodName string, args []interface{}) (LatticeFunction, error) {
+func (i *latticeAbi) GetLatticeFunction(methodName string, args ...interface{}) (LatticeFunction, error) {
 	method, err := i.Function(methodName)
 	if err != nil {
 		return nil, err
