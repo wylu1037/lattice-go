@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/avast/retry-go"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/samber/lo"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
@@ -235,6 +236,10 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string) (*
 		SetPayload(payload).
 		Build()
 
+	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
+	transaction.CodeHash = dataHash
+
 	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.IdentityConfig.GetSK())
 	if err != nil {
 		return nil, err
@@ -261,6 +266,10 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 		SetPayload(payload).
 		Build()
 
+	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
+	transaction.CodeHash = dataHash
+
 	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.IdentityConfig.GetSK())
 	if err != nil {
 		return nil, err
@@ -273,12 +282,8 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 	return hash, nil
 }
 
-func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.Transfer(ctx, linker, payload)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+	var err error
 	var receipt *types.Receipt
 	err = retry.Do(
 		func() error {
@@ -292,20 +297,34 @@ func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload str
 	)
 
 	if err != nil {
-		return nil, nil, err
+		return hash, nil, err
 	}
 	return hash, receipt, nil
 }
 
-func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
-	_, err := svc.DeployContract(ctx, data, payload)
+func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.Transfer(ctx, linker, payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return nil, nil, nil
+	return svc.waitReceipt(ctx, hash, waitStrategy)
+}
+
+func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployContract(ctx, data, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, hash, waitStrategy)
 }
 
 func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
-	return nil, nil, nil
+	hash, err := svc.CallContract(ctx, contractAddress, data, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, hash, waitStrategy)
 }

@@ -3,15 +3,15 @@ package types
 import "github.com/ethereum/go-ethereum/common"
 
 type Receipt struct {
-	Success         bool           `json:"success"`
-	ReceiptIndex    uint64         `json:"receiptIndex"`
-	TBlockHash      common.Hash    `json:"tBlockHash"`
-	ContractAddress common.Address `json:"contractAddress"`
-	ContractRet     string         `json:"contractRet"`
-	JouleUsed       uint64         `json:"jouleUsed"`
-	Events          []Event        `json:"events"`
-	DBlockHash      common.Hash    `json:"dBlockHash"`
-	DBlockNumber    uint64         `json:"dBlockNumber"`
+	Success         bool        `json:"success"`
+	ReceiptIndex    uint64      `json:"receiptIndex"`
+	TBlockHash      common.Hash `json:"tBlockHash"`
+	ContractAddress string      `json:"contractAddress"`
+	ContractRet     string      `json:"contractRet"`
+	JouleUsed       uint64      `json:"jouleUsed"`
+	Events          []Event     `json:"events"`
+	DBlockHash      common.Hash `json:"dBlockHash"`
+	DBlockNumber    uint64      `json:"dBlockNumber"`
 }
 
 type Event struct {

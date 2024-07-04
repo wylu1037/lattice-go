@@ -244,3 +244,12 @@ func (i *Api) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
 	hash.Sum(h[:0])
 	return h
 }
+
+func (i *Api) Hash(data ...[]byte) (h common.Hash) {
+	hash := sm3.New()
+	for _, b := range data {
+		hash.Write(b)
+	}
+	hash.Sum(h[:0])
+	return h
+}

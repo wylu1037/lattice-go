@@ -10,15 +10,22 @@ import (
 	"lattice-go/crypto/sm2p256v1"
 )
 
+var instance CryptographyApi
+
 func NewCrypto(curve types.Curve) CryptographyApi {
+	if instance != nil {
+		return instance
+	}
+
 	switch curve {
 	case Sm2p256v1:
-		return sm2p256v1.New()
+		instance = sm2p256v1.New()
 	case Secp256k1:
-		return secp256k1.New()
+		instance = secp256k1.New()
 	default:
-		return sm2p256v1.New()
+		instance = sm2p256v1.New()
 	}
+	return instance
 }
 
 type CryptographyApi interface {
@@ -54,4 +61,5 @@ type CryptographyApi interface {
 	GetCurve() elliptic.Curve
 	// EncodeHash Rlp encode and hash
 	EncodeHash(encodeFunc func(io.Writer)) common.Hash
+	Hash(data ...[]byte) common.Hash
 }

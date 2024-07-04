@@ -206,3 +206,12 @@ func (i *Api) hexStringToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, err
 	}
 	return privateKey, nil
 }
+
+func (i *Api) Hash(data ...[]byte) (h common.Hash) {
+	hash256 := sha256.New()
+	for _, b := range data {
+		hash256.Write(b)
+	}
+	hash256.Sum(h[:0])
+	return h
+}
