@@ -1,0 +1,184 @@
+package client
+
+import (
+	"context"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"io"
+	"lattice-go/common/types"
+	"lattice-go/lattice/block"
+	"net/http"
+	"strings"
+)
+
+const (
+	// MaxIdleConns controls the maximum number of idle (keep-alive)
+	// connections across all hosts. Zero means no limit.
+	MaxIdleConns = 0
+
+	// MaxIdleConnsPerHost if non-zero, controls the maximum idle
+	// (keep-alive) connections to keep per-host.
+	// If zero, DefaultMaxIdleConnsPerHost(2) is used.
+	MaxIdleConnsPerHost = 300
+)
+
+var tr = &http.Transport{
+	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+	MaxIdleConns:        MaxIdleConns,
+	MaxIdleConnsPerHost: MaxIdleConnsPerHost,
+}
+
+// JsonRpcBody Json-Rpc的请求体结构
+type JsonRpcBody struct {
+	Id      int           `json:"id,omitempty"`
+	JsonRpc string        `json:"jsonrpc,omitempty"`
+	Method  string        `json:"method,omitempty"` // 方法名
+	Params  []interface{} `json:"params,omitempty"` // 方法参数
+}
+
+// JsonRpcResponse Json-Rpc请求的响应结构
+type JsonRpcResponse[T any] struct {
+	Id      int           `json:"id,omitempty"`
+	JsonRpc string        `json:"jsonrpc,omitempty"`
+	Result  T             `json:"result,omitempty"`
+	Error   *JsonRpcError `json:"error,omitempty"`
+}
+
+type JsonRpcError struct {
+	Code    uint16 `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+}
+
+func (e *JsonRpcError) Error() error {
+	return fmt.Errorf("%d:%s", e.Code, e.Message)
+}
+
+func NewJsonRpcBody(method string, params ...interface{}) *JsonRpcBody {
+	return &JsonRpcBody{
+		Id:      1,
+		JsonRpc: "2.0",
+		Method:  method,
+		Params:  params,
+	}
+}
+
+// HttpApiInitParam 初始化HTTP API的参数
+type HttpApiInitParam struct {
+}
+
+func NewHttpApi(url string, chainId string) HttpApi {
+	return &httpApi{
+		ChainId: chainId,
+		Url:     url,
+	}
+}
+
+type HttpApi interface {
+	// GetLatestBlock 获取当前账户的最新的区块信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - accountAddress string: 账户地址，zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
+	//
+	// Returns:
+	//   - types.LatestBlock
+	//   - error
+	GetLatestBlock(ctx context.Context, accountAddress string) (*types.LatestBlock, error)
+
+	// SendSignedTransaction 发送已签名的交易
+	//
+	// Parameters:
+	//    - ctx context.Context
+	//    - signedTX *block.Transaction
+	//
+	// Returns:
+	//    - o
+	SendSignedTransaction(ctx context.Context, signedTX *block.Transaction) (*common.Hash, error)
+}
+
+type httpApi struct {
+	ChainId string
+	Url     string
+}
+
+func (api *httpApi) newHeaders() map[string]string {
+	return map[string]string{
+		"Content-Type": "application/json",
+		"ChainId":      api.ChainId,
+	}
+}
+
+func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*types.LatestBlock, error) {
+	response, err := Post[JsonRpcResponse[types.LatestBlock]](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders())
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return &response.Result, nil
+}
+
+func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Transaction) (*common.Hash, error) {
+	response, err := Post[JsonRpcResponse[common.Hash]](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders())
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return &response.Result, nil
+}
+
+// Post send http request use post method
+//
+// Parameters:
+//   - url: 请求路径，示例：http://192.168.1.20:13000
+//   - body: any, 请求体
+//   - headers: 请求头
+//
+// Returns:
+//   - []byte: 响应内容
+//   - error: 错误
+func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string) (*T, error) {
+	bytes, err := json.Marshal(jsonRpcBody)
+	if err != nil {
+		return nil, err
+	}
+	body := strings.NewReader(string(bytes))
+
+	request, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if headers != nil && len(headers) != 0 {
+		for key, value := range headers {
+			request.Header.Set(key, value)
+		}
+	}
+	client := &http.Client{Transport: tr}
+	request.TransferEncoding = []string{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			fmt.Println("Failed to close response body")
+		}
+	}(response.Body)
+
+	if res, err := io.ReadAll(response.Body); err != nil {
+		return nil, err
+	} else {
+		var t T
+		if err := json.Unmarshal(res, &t); err != nil {
+			return nil, err
+		}
+
+		return &t, nil
+	}
+}

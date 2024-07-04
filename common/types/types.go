@@ -9,12 +9,6 @@ const (
 	HashLength     = 32 // 32 byte
 )
 
-// Address define `Address` type
-type Address [AddressLength]byte
-
-// Hash define `Hash` type
-type Hash [HashLength]byte
-
 // Curve Elliptic curve
 type Curve string
 
