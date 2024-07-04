@@ -5,11 +5,12 @@ import (
 	"net/http"
 )
 
-func NewLattice(ip string, httpPort, wsPort uint16, options *Options) Lattice {
+func NewLattice(chainConfig *ChainConfig, nodeConfig *NodeConfig, identityConfig *IdentityConfig, options *Options) Lattice {
 	return &lattice{
-		ip:       ip,
-		httpPort: httpPort,
-		wsPort:   wsPort,
+		ChainConfig:    chainConfig,
+		NodeConfig:     nodeConfig,
+		IdentityConfig: identityConfig,
+		Options:        options,
 	}
 }
 
@@ -17,17 +18,29 @@ type Lattice interface {
 }
 
 type lattice struct {
-	chainId    types.Number
-	curve      types.Curve
-	passphrase string
-	ip         string
-	httpPort   uint16
-	wsPort     uint16
-	transport  *http.Transport
+	ChainConfig    *ChainConfig
+	NodeConfig     *NodeConfig
+	IdentityConfig *IdentityConfig
+	Options        *Options
+}
+
+type ChainConfig struct {
+	ChainId uint64
+	Curve   types.Curve
+}
+
+type NodeConfig struct {
+	Insecure      bool
+	Ip            string
+	HttpPort      uint16
+	WebsocketPort uint16
+}
+
+type IdentityConfig struct {
+	Passphrase string
+	PrivateKey string
 }
 
 type Options struct {
-	Insecure            bool
-	MaxIdleConns        int
-	MaxIdleConnsPerHost int
+	Transport *http.Transport
 }

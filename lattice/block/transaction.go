@@ -11,6 +11,18 @@ import (
 	"math/big"
 )
 
+type TransactionType string
+
+const (
+	TransactionTypeGenesis         TransactionType = "genesis"
+	TransactionTypeCreate          TransactionType = "create"
+	TransactionTypeSend            TransactionType = "send"
+	TransactionTypeReceive         TransactionType = "receive"
+	TransactionTypeDeployContract  TransactionType = "contract"
+	TransactionTypeCallContract    TransactionType = "execute"
+	TransactionTypeUpgradeContract TransactionType = "update"
+)
+
 const (
 	Genesis = iota
 	Create
@@ -30,47 +42,53 @@ const (
 	UpgradeJavaContract
 )
 
-var TransactionTypeCode = map[string]uint8{
-	"genesis":  Genesis,
-	"create":   Create,
-	"send":     Send,
-	"receive":  Receive,
-	"contract": Contract,
-	"execute":  Execute,
-	"upgrade":  Upgrade,
+var TransactionTypeCode = map[TransactionType]uint8{
+	TransactionTypeGenesis:         Genesis,
+	TransactionTypeCreate:          Create,
+	TransactionTypeSend:            Send,
+	TransactionTypeReceive:         Receive,
+	TransactionTypeDeployContract:  Contract,
+	TransactionTypeCallContract:    Execute,
+	TransactionTypeUpgradeContract: Upgrade,
 }
 
 // Transaction 构造交易的结构体
 type Transaction struct {
-	Height      uint64        `json:"number"`
-	Type        string        `json:"type"`
-	ParentHash  common.Hash   `json:"parentHash"`
-	Hub         []common.Hash `json:"hub"`
-	DaemonHash  common.Hash   `json:"daemonHash"`
-	CodeHash    common.Hash   `json:"codeHash"`
-	Owner       string        `json:"owner"`
-	Linker      string        `json:"linker"`
-	Amount      *big.Int      `json:"amount"`
-	Joule       uint64        `json:"joule"`
-	Difficulty  uint64        `json:"difficulty"`
-	Pow         *big.Int      `json:"pow"`
-	ProofOfWork *big.Int      `json:"proofOfWork"`
-	Payload     string        `json:"payload"`
-	Timestamp   uint64        `json:"timestamp"`
-	Code        string        `json:"code"`
-	Sign        string        `json:"sign"`
-	Hash        string        `json:"hash"`
-	Hash2       common.Hash   `json:"hash2"`
-	Key         string        `json:"key"`
-	DataHash    string        `json:"dataHash"`
-	ApplyHash   string        `json:"applyHash"`
+	Height      uint64          `json:"number"`
+	Type        TransactionType `json:"type"`
+	ParentHash  common.Hash     `json:"parentHash"`
+	Hub         []common.Hash   `json:"hub"`
+	DaemonHash  common.Hash     `json:"daemonHash"`
+	CodeHash    common.Hash     `json:"codeHash"`
+	Owner       string          `json:"owner"`
+	Linker      string          `json:"linker"`
+	Amount      *big.Int        `json:"amount"`
+	Joule       uint64          `json:"joule"`
+	Difficulty  uint64          `json:"difficulty"`
+	Pow         *big.Int        `json:"pow"`
+	ProofOfWork *big.Int        `json:"proofOfWork"`
+	Payload     string          `json:"payload"`
+	Timestamp   uint64          `json:"timestamp"`
+	Code        string          `json:"code"`
+	Sign        string          `json:"sign"`
+	Hash        string          `json:"hash"`
+	Hash2       common.Hash     `json:"hash2"`
+	Key         string          `json:"key"`
+	DataHash    string          `json:"dataHash"`
+	ApplyHash   string          `json:"applyHash"`
 }
 
 func (tx *Transaction) GetTypeCode() uint8 {
 	return TransactionTypeCode[tx.Type]
 }
 
-func (tx *Transaction) GetEthOwner() common.Address {
+// GetOwnerAddress 获取Owner地址
+//
+// Parameters:
+//
+// Returns:
+//   - common.Address
+func (tx *Transaction) GetOwnerAddress() common.Address {
 	addr, err := convert.ZltcToAddress(tx.Owner)
 	if err != nil {
 		return common.Address{}
@@ -78,7 +96,13 @@ func (tx *Transaction) GetEthOwner() common.Address {
 	return addr
 }
 
-func (tx *Transaction) GetEthLinker() common.Address {
+// GetLinkerAddress 获取Linker地址
+//
+// Parameters:
+//
+// Returns:
+//   - common.Address
+func (tx *Transaction) GetLinkerAddress() common.Address {
 	addr, err := convert.ZltcToAddress(tx.Linker)
 	if err != nil {
 		return common.Address{}
@@ -86,15 +110,14 @@ func (tx *Transaction) GetEthLinker() common.Address {
 	return addr
 }
 
+// DecodePayload decode 16进制的payload
+//
+// Parameters:
+//
+// Returns:
+//   - []byte
 func (tx *Transaction) DecodePayload() []byte {
 	return hexutil.MustDecode(tx.Payload)
-}
-
-// RawTransaction 发送到链上的结构体
-type RawTransaction struct {
-	Height     uint64      `json:"number"`
-	Type       uint8       `json:"type"`
-	ParentHash common.Hash `json:"parentHash"`
 }
 
 // RlpEncodeHash 对交易进行rlp编码并计算哈希
@@ -114,8 +137,8 @@ func (tx *Transaction) rlpEncodeHash(chainId uint64, curve types.Curve) (common.
 			tx.Hub,
 			tx.DaemonHash,
 			tx.CodeHash,
-			tx.GetEthOwner(),
-			tx.GetEthLinker(),
+			tx.GetOwnerAddress(),
+			tx.GetLinkerAddress(),
 			tx.Amount,
 			tx.Joule,
 			tx.Difficulty,
