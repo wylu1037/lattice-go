@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"lattice-go/crypto"
 	"testing"
+	"time"
 )
 
 func TestLattice_Transfer(t *testing.T) {
@@ -15,9 +16,10 @@ func TestLattice_Transfer(t *testing.T) {
 		&Options{},
 	)
 
-	hash, err := lattice.Transfer(context.Background(), "zltc_S5KXbs6gFkEpSnfNpBg3DvZHnB9aasa6Q", "0x10")
+	hash, receipt, err := lattice.TransferWaitReceipt(context.Background(), "zltc_S5KXbs6gFkEpSnfNpBg3DvZHnB9aasa6Q", "0x10", NewBackOffWaitStrategy(10, time.Second))
 	assert.NoError(t, err)
 	t.Log(hash.String())
+	t.Log(receipt)
 }
 
 func TestLattice_DeployContract(t *testing.T) {

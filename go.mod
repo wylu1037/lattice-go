@@ -3,6 +3,7 @@ module lattice-go
 go 1.22
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/defiweb/go-eth v0.6.1
 	github.com/ethereum/go-ethereum v1.14.5

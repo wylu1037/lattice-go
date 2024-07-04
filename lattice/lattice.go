@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/avast/retry-go"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/samber/lo"
 	"lattice-go/common/types"
@@ -111,22 +112,69 @@ func (node *NodeConfig) GetWebsocketUrl() string {
 
 type Strategy string
 
+const (
+	BackOff        = "BackOff"
+	FixedInterval  = "FixedInterval"
+	RandomInterval = "RandomInterval"
+)
+
 // WaitStrategy 等待回执策略
 type WaitStrategy struct {
 	// 具体的策略
-	Strategy Strategy
-	// 最大重试次数
-	MaxRetryTimes uint8
-	// 重试间隔
-	RetryInterval time.Duration
+	Strategy  Strategy
+	Attempts  uint
+	Delay     time.Duration
+	MaxJitter time.Duration
 }
 
-func NewDefaultWaitStrategy() *WaitStrategy {
-	return &WaitStrategy{
-		Strategy:      "",
-		MaxRetryTimes: 10,
-		RetryInterval: time.Second,
+func (strategy *WaitStrategy) GetWaitStrategyOpts() []retry.Option {
+	switch strategy.Strategy {
+	case BackOff:
+		return strategy.BackOffOpts()
+	case FixedInterval:
+		return strategy.FixedIntervalOpts()
+	case RandomInterval:
+		return strategy.RandomIntervalOpts()
+	default:
+		return []retry.Option{}
 	}
+}
+
+func NewBackOffWaitStrategy(attempts uint, initDelay time.Duration) *WaitStrategy {
+	return &WaitStrategy{
+		Strategy: BackOff,
+		Attempts: attempts,
+		Delay:    initDelay,
+	}
+}
+
+func NewFixedWaitStrategy(attempts uint, fixedDelay time.Duration) *WaitStrategy {
+	return &WaitStrategy{
+		Strategy: FixedInterval,
+		Attempts: attempts,
+		Delay:    fixedDelay,
+	}
+}
+
+func NewRandomWaitStrategy(attempts uint, baseDelay time.Duration, maxJitter time.Duration) *WaitStrategy {
+	return &WaitStrategy{
+		Strategy:  RandomInterval,
+		Attempts:  attempts,
+		Delay:     baseDelay,
+		MaxJitter: maxJitter,
+	}
+}
+
+func (strategy *WaitStrategy) BackOffOpts() []retry.Option {
+	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.DelayType(retry.BackOffDelay)}
+}
+
+func (strategy *WaitStrategy) FixedIntervalOpts() []retry.Option {
+	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.DelayType(retry.FixedDelay)}
+}
+
+func (strategy *WaitStrategy) RandomIntervalOpts() []retry.Option {
+	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.MaxJitter(strategy.MaxJitter), retry.DelayType(retry.RandomDelay)}
 }
 
 type Lattice interface {
@@ -226,10 +274,35 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 }
 
 func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
-	return nil, nil, nil
+	hash, err := svc.Transfer(ctx, linker, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var receipt *types.Receipt
+	err = retry.Do(
+		func() error {
+			receipt, err = svc.httpApi.GetReceipt(ctx, hash.String())
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+		waitStrategy.GetWaitStrategyOpts()...,
+	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return hash, receipt, nil
 }
 
 func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+	_, err := svc.DeployContract(ctx, data, payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return nil, nil, nil
 }
 

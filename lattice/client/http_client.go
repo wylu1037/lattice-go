@@ -79,6 +79,7 @@ type HttpApi interface {
 	// Returns:
 	//    - o
 	SendSignedTransaction(ctx context.Context, signedTX *block.Transaction) (*common.Hash, error)
+	GetReceipt(ctx context.Context, hash string) (*types.Receipt, error)
 }
 
 type httpApi struct {
@@ -107,6 +108,16 @@ func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*t
 
 func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Transaction) (*common.Hash, error) {
 	response, err := Post[JsonRpcResponse[common.Hash]](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return &response.Result, nil
+}
+func (api *httpApi) GetReceipt(_ context.Context, hash string) (*types.Receipt, error) {
+	response, err := Post[JsonRpcResponse[types.Receipt]](api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
