@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,23 +11,6 @@ import (
 	"net/http"
 	"strings"
 )
-
-const (
-	// MaxIdleConns controls the maximum number of idle (keep-alive)
-	// connections across all hosts. Zero means no limit.
-	MaxIdleConns = 0
-
-	// MaxIdleConnsPerHost if non-zero, controls the maximum idle
-	// (keep-alive) connections to keep per-host.
-	// If zero, DefaultMaxIdleConnsPerHost(2) is used.
-	MaxIdleConnsPerHost = 300
-)
-
-var tr = &http.Transport{
-	TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-	MaxIdleConns:        MaxIdleConns,
-	MaxIdleConnsPerHost: MaxIdleConnsPerHost,
-}
 
 // JsonRpcBody Json-Rpc的请求体结构
 type JsonRpcBody struct {
@@ -68,10 +50,11 @@ func NewJsonRpcBody(method string, params ...interface{}) *JsonRpcBody {
 type HttpApiInitParam struct {
 }
 
-func NewHttpApi(url string, chainId string) HttpApi {
+func NewHttpApi(url string, chainId string, transport *http.Transport) HttpApi {
 	return &httpApi{
-		ChainId: chainId,
-		Url:     url,
+		ChainId:   chainId,
+		Url:       url,
+		transport: transport,
 	}
 }
 
@@ -99,8 +82,9 @@ type HttpApi interface {
 }
 
 type httpApi struct {
-	ChainId string
-	Url     string
+	ChainId   string
+	Url       string
+	transport *http.Transport
 }
 
 func (api *httpApi) newHeaders() map[string]string {
@@ -111,7 +95,7 @@ func (api *httpApi) newHeaders() map[string]string {
 }
 
 func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*types.LatestBlock, error) {
-	response, err := Post[JsonRpcResponse[types.LatestBlock]](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders())
+	response, err := Post[JsonRpcResponse[types.LatestBlock]](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +106,7 @@ func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*t
 }
 
 func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Transaction) (*common.Hash, error) {
-	response, err := Post[JsonRpcResponse[common.Hash]](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders())
+	response, err := Post[JsonRpcResponse[common.Hash]](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -135,14 +119,15 @@ func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Tra
 // Post send http request use post method
 //
 // Parameters:
-//   - url: 请求路径，示例：http://192.168.1.20:13000
-//   - body: any, 请求体
-//   - headers: 请求头
+//   - url string: 请求路径，示例：http://192.168.1.20:13000
+//   - body sonRpcBody: any, 请求体
+//   - headers map[string]string: 请求头
+//   - tr http.Transport:
 //
 // Returns:
 //   - []byte: 响应内容
 //   - error: 错误
-func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string) (*T, error) {
+func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*T, error) {
 	bytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
 		return nil, err
