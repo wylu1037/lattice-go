@@ -79,7 +79,29 @@ type HttpApi interface {
 	// Returns:
 	//    - o
 	SendSignedTransaction(ctx context.Context, signedTX *block.Transaction) (*common.Hash, error)
+
+	// GetReceipt 获取交易回执
+	//
+	// Parameters:
+	//    - ctx context.Context
+	//    - hash string
+	//
+	// Returns:
+	//    - types.Receipt
+	//    - error
 	GetReceipt(ctx context.Context, hash string) (*types.Receipt, error)
+
+	// GetContractLifecycleProposal 获取合约生命周期提案
+	//
+	// Parameters:
+	//    - ctx context.Context
+	//    - contractAddress string
+	//    - state types.ProposalState
+	//
+	// Returns:
+	//    - types.Proposal[types.ContractLifecycleProposal]
+	//    - error
+	GetContractLifecycleProposal(ctx context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error)
 }
 
 type httpApi struct {
@@ -118,6 +140,23 @@ func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Tra
 }
 func (api *httpApi) GetReceipt(_ context.Context, hash string) (*types.Receipt, error) {
 	response, err := Post[JsonRpcResponse[types.Receipt]](api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return &response.Result, nil
+}
+
+func (api *httpApi) GetContractLifecycleProposal(ctx context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error) {
+	params := map[string]interface{}{
+		"proposalType":    types.ProposalTypeContractLifecycle,
+		"proposalState":   state,
+		"contractAddress": contractAddress,
+	}
+
+	response, err := Post[JsonRpcResponse[types.Proposal[types.ContractLifecycleProposal]]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}

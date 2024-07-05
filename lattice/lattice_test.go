@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"lattice-go/abi"
 	"lattice-go/crypto"
+	"lattice-go/lattice/builtin"
 	"testing"
 	"time"
 )
@@ -39,6 +40,8 @@ func TestLattice_DeployContractWaitReceipt(t *testing.T) {
 	r, err := json.Marshal(receipt)
 	assert.NoError(t, err)
 	t.Log(string(r))
+
+	//contractAddress := "zltc_UWhDiwv4ZFXSxmVvhE1RH6fw5s6YTSEoU"
 }
 
 func TestLattice_CallContractWaitReceipt(t *testing.T) {
@@ -54,7 +57,27 @@ func TestLattice_CallContractWaitReceipt(t *testing.T) {
 	assert.NoError(t, err)
 	data, err := function.Encode()
 	assert.NoError(t, err)
-	hash, receipt, err := lattice.CallContractWaitReceipt(context.Background(), "zltc_gCR78GqjW3E7PLhXE5JRDmR3Ft12ofGkg", data, "0x", NewFixedWaitStrategy(10, 100*time.Millisecond))
+	hash, receipt, err := lattice.CallContractWaitReceipt(context.Background(), "zltc_a5jerZSQ2UNMhDbUkHaYuVbiBMxkZWETj", data, "0x", NewFixedWaitStrategy(10, 100*time.Millisecond))
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	t.Log(string(r))
+}
+
+func TestLattice_CallContract(t *testing.T) {
+	lattice := NewLattice(
+		&ChainConfig{ChainId: 1, Curve: crypto.Sm2p256v1},
+		&NodeConfig{Ip: "192.168.1.185", HttpPort: 13000},
+		&IdentityConfig{AccountAddress: "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi", PrivateKey: "0x23d5b2a2eb0a9c8b86d62cbc3955cfd1fb26ec576ecc379f402d0f5d2b27a7bb"},
+		&Options{},
+	)
+
+	voteContract := builtin.NewVoteContract()
+	data, err := voteContract.Approve("0x101")
+	assert.NoError(t, err)
+
+	hash, receipt, err := lattice.CallContractWaitReceipt(context.Background(), builtin.VoteBuiltinContract.Address, data, "0x", NewFixedWaitStrategy(10, 100*time.Millisecond))
 	assert.NoError(t, err)
 	t.Log(hash.String())
 	r, err := json.Marshal(receipt)
