@@ -182,7 +182,7 @@ func DefaultFixedWaitStrategy() *WaitStrategy {
 	return &WaitStrategy{
 		Strategy: FixedInterval,
 		Attempts: 10,
-		Delay:    time.Millisecond * 100,
+		Delay:    time.Millisecond * 150,
 	}
 }
 
@@ -223,6 +223,7 @@ func (strategy *WaitStrategy) RandomIntervalOpts() []retry.Option {
 }
 
 type Lattice interface {
+	HttpApi() client.HttpApi
 	// Transfer 发起转账交易
 	//
 	// Parameters:
@@ -244,6 +245,10 @@ type Lattice interface {
 	DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
 
 	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+}
+
+func (svc *lattice) HttpApi() client.HttpApi {
+	return svc.httpApi
 }
 
 func (svc *lattice) Transfer(ctx context.Context, linker, payload string) (*common.Hash, error) {

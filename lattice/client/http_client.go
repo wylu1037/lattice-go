@@ -101,7 +101,7 @@ type HttpApi interface {
 	// Returns:
 	//    - types.Proposal[types.ContractLifecycleProposal]
 	//    - error
-	GetContractLifecycleProposal(ctx context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error)
+	GetContractLifecycleProposal(ctx context.Context, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error)
 }
 
 type httpApi struct {
@@ -150,21 +150,21 @@ func (api *httpApi) GetReceipt(_ context.Context, hash string) (*types.Receipt, 
 	return response.Result, nil
 }
 
-func (api *httpApi) GetContractLifecycleProposal(_ context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error) {
+func (api *httpApi) GetContractLifecycleProposal(_ context.Context, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error) {
 	params := map[string]interface{}{
 		"proposalType":    types.ProposalTypeContractLifecycle,
 		"proposalState":   state,
-		"contractAddress": contractAddress,
+		"proposalAddress": contractAddress,
 	}
 
-	response, err := Post[types.Proposal[types.ContractLifecycleProposal]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(), api.transport)
+	response, err := Post[[]types.Proposal[types.ContractLifecycleProposal]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return response.Result, nil
+	return *response.Result, nil
 }
 
 // Post send http request use post method

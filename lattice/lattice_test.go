@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"lattice-go/abi"
+	"lattice-go/common/types"
 	"lattice-go/crypto"
 	"lattice-go/lattice/builtin"
 	"testing"
@@ -40,6 +41,20 @@ func TestLattice_DeployContractWaitReceipt(t *testing.T) {
 	r, err := json.Marshal(receipt)
 	assert.NoError(t, err)
 	t.Log(string(r))
+
+	// 获取正在进行的提案
+	proposal, err := lattice.HttpApi().GetContractLifecycleProposal(context.Background(), receipt.ContractAddress, types.ProposalStateInitial)
+	assert.NoError(t, err)
+
+	voteContract := builtin.NewVoteContract()
+	approveData, err := voteContract.Approve(proposal[0].Content.Id)
+	assert.Nil(t, err)
+
+	hash, receipt, err = lattice.CallContractWaitReceipt(context.Background(), builtin.VoteBuiltinContract.Address, approveData, "0x", DefaultFixedWaitStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	re, _ := json.Marshal(receipt)
+	t.Log(string(re))
 
 	//contractAddress := "zltc_UWhDiwv4ZFXSxmVvhE1RH6fw5s6YTSEoU"
 }
