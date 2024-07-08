@@ -118,52 +118,53 @@ func (api *httpApi) newHeaders() map[string]string {
 }
 
 func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*types.LatestBlock, error) {
-	response, err := Post[JsonRpcResponse[types.LatestBlock]](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders(), api.transport)
+	response, err := Post[types.LatestBlock](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return &response.Result, nil
+	return response.Result, nil
 }
 
 func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Transaction) (*common.Hash, error) {
-	response, err := Post[JsonRpcResponse[common.Hash]](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(), api.transport)
+	response, err := Post[common.Hash](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return &response.Result, nil
-}
-func (api *httpApi) GetReceipt(_ context.Context, hash string) (*types.Receipt, error) {
-	response, err := Post[JsonRpcResponse[types.Receipt]](api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(), api.transport)
-	if err != nil {
-		return nil, err
-	}
-	if response.Error != nil {
-		return nil, response.Error.Error()
-	}
-	return &response.Result, nil
+	return response.Result, nil
 }
 
-func (api *httpApi) GetContractLifecycleProposal(ctx context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error) {
+func (api *httpApi) GetReceipt(_ context.Context, hash string) (*types.Receipt, error) {
+	response, err := Post[types.Receipt](api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetContractLifecycleProposal(_ context.Context, contractAddress string, state types.ProposalState) (*types.Proposal[types.ContractLifecycleProposal], error) {
 	params := map[string]interface{}{
 		"proposalType":    types.ProposalTypeContractLifecycle,
 		"proposalState":   state,
 		"contractAddress": contractAddress,
 	}
 
-	response, err := Post[JsonRpcResponse[types.Proposal[types.ContractLifecycleProposal]]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(), api.transport)
+	response, err := Post[types.Proposal[types.ContractLifecycleProposal]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return &response.Result, nil
+	return response.Result, nil
 }
 
 // Post send http request use post method
@@ -177,7 +178,7 @@ func (api *httpApi) GetContractLifecycleProposal(ctx context.Context, contractAd
 // Returns:
 //   - []byte: 响应内容
 //   - error: 错误
-func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*T, error) {
+func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
 	bytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
 		return nil, err
@@ -209,7 +210,7 @@ func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string
 	if res, err := io.ReadAll(response.Body); err != nil {
 		return nil, err
 	} else {
-		var t T
+		var t JsonRpcResponse[*T]
 		if err := json.Unmarshal(res, &t); err != nil {
 			return nil, err
 		}

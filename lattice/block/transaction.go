@@ -121,6 +121,7 @@ func (tx *Transaction) DecodePayload() []byte {
 }
 
 // RlpEncodeHash 对交易进行rlp编码并计算哈希
+//
 // Parameters:
 //   - chainId *big.Int: 区块链ID
 //   - curve types.Curve: 椭圆曲线
@@ -157,6 +158,7 @@ func (tx *Transaction) rlpEncodeHash(chainId uint64, curve types.Curve) (common.
 }
 
 // SignTx 签名交易
+//
 // Parameters:
 //   - curve types.Curve: 椭圆曲线类型
 //   - hash []byte: 哈希
@@ -182,6 +184,7 @@ func (tx *Transaction) sign(curve types.Curve, hash []byte, skHex string) ([]byt
 }
 
 // SignTX 签名交易
+//
 // Parameters:
 //   - chainId *big.Int
 //   - curve types.Curve

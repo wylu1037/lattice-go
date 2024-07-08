@@ -21,6 +21,7 @@ const (
 	httpProtocol      = "http"
 	httpsProtocol     = "https"
 	websocketProtocol = "ws"
+	zeroAddress       = "zltc_QLbz7JHiBTspS962RLKV8GndWFwjA5K66"
 )
 
 func NewLattice(chainConfig *ChainConfig, nodeConfig *NodeConfig, identityConfig *IdentityConfig, options *Options) Lattice {
@@ -149,11 +150,39 @@ func NewBackOffWaitStrategy(attempts uint, initDelay time.Duration) *WaitStrateg
 	}
 }
 
+// DefaultBackOffWaitStrategy 创建默认的BackOff等待策略
+//
+// Parameters:
+//
+// Returns:
+//   - WaitStrategy
+func DefaultBackOffWaitStrategy() *WaitStrategy {
+	return &WaitStrategy{
+		Strategy: BackOff,
+		Attempts: 10,
+		Delay:    time.Millisecond * 200,
+	}
+}
+
 func NewFixedWaitStrategy(attempts uint, fixedDelay time.Duration) *WaitStrategy {
 	return &WaitStrategy{
 		Strategy: FixedInterval,
 		Attempts: attempts,
 		Delay:    fixedDelay,
+	}
+}
+
+// DefaultFixedWaitStrategy 创建默认的固定等待策略
+//
+// Parameters:
+//
+// Returns:
+//   - WaitStrategy
+func DefaultFixedWaitStrategy() *WaitStrategy {
+	return &WaitStrategy{
+		Strategy: FixedInterval,
+		Attempts: 10,
+		Delay:    time.Millisecond * 100,
 	}
 }
 
@@ -163,6 +192,21 @@ func NewRandomWaitStrategy(attempts uint, baseDelay time.Duration, maxJitter tim
 		Attempts:  attempts,
 		Delay:     baseDelay,
 		MaxJitter: maxJitter,
+	}
+}
+
+// DefaultRandomWaitStrategy 创建默认的随机等待策略
+//
+// Parameters:
+//
+// Returns:
+//   - WaitStrategy
+func DefaultRandomWaitStrategy() *WaitStrategy {
+	return &WaitStrategy{
+		Strategy:  RandomInterval,
+		Attempts:  10,
+		Delay:     time.Millisecond * 100,
+		MaxJitter: time.Millisecond * 500,
 	}
 }
 
@@ -190,10 +234,15 @@ type Lattice interface {
 	//    - common.Hash: 交易哈希
 	//    - error
 	Transfer(ctx context.Context, linker, payload string) (*common.Hash, error)
+
 	DeployContract(ctx context.Context, data, payload string) (*common.Hash, error)
+
 	CallContract(ctx context.Context, contractAddress, data, payload string) (*common.Hash, error)
+
 	TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+
 	DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+
 	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
 }
 
@@ -231,7 +280,7 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string) (*
 	transaction := block.NewTransactionBuilder(block.TransactionTypeDeployContract).
 		SetLatestBlock(latestBlock).
 		SetOwner(svc.IdentityConfig.AccountAddress).
-		SetLinker("zltc_QLbz7JHiBTspS962RLKV8GndWFwjA5K66").
+		SetLinker(zeroAddress).
 		SetCode(data).
 		SetPayload(payload).
 		Build()
