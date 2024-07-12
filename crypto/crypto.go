@@ -45,6 +45,7 @@ type CryptographyApi interface {
 	HexToPK(pkHex string) (*ecdsa.PublicKey, error)
 	// BytesToPK 将[]byte转为公钥
 	BytesToPK(pk []byte) (*ecdsa.PublicKey, error)
+	BytesToSK(sk []byte) (*ecdsa.PrivateKey, error)
 	// PKToAddress 将公钥转为地址
 	PKToAddress(pk *ecdsa.PublicKey) (common.Address, error)
 	// Sign 签名

@@ -82,7 +82,7 @@ func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	return i.hexStringToSK(bytes, true)
+	return i.bytesToSK(bytes, true)
 }
 
 // PKToBytes 将公钥转为[]byte
@@ -123,6 +123,10 @@ func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
 		X:     x,
 		Y:     y,
 	}, nil
+}
+
+func (i *Api) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
+	return i.bytesToSK(sk, true)
 }
 
 // PKToAddress 将公钥(取后20位字节)转为地址
@@ -213,7 +217,7 @@ func (i *Api) GetCurve() elliptic.Curve {
 	return sm2.P256Sm2()
 }
 
-func (i *Api) hexStringToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
+func (i *Api) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	privateKey := new(ecdsa.PrivateKey)
 	privateKey.PublicKey.Curve = i.GetCurve()
 	if strict && 8*len(skBytes) != privateKey.Params().BitSize {

@@ -1,10 +1,13 @@
 package wallet
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/google/uuid"
@@ -50,15 +53,20 @@ type Kdf struct {
 }
 
 type KdfParams struct {
-	DkLen uint32 `json:"DkLen"` // 生成的密钥长度，单位byte
+	DkLen uint32 `json:"DKLen"` // 生成的密钥长度，单位byte
 	N     uint32 `json:"n"`     // CPU/内存成本因子，控制计算和内存的使用量。
 	P     uint32 `json:"p"`     // 并行度因子，控制 scrypt 函数的并行度。
 	R     uint32 `json:"r"`     // 块大小因子，影响内部工作状态和内存占用。
 	Salt  string `json:"salt"`  // 盐值，在密钥派生过程中加入随机性。
 }
 
-func NewFileKey() *FileKey {
-	return nil
+func NewFileKey(fileKeyJsonString string) *FileKey {
+	var fileKey FileKey
+	err := json.Unmarshal([]byte(fileKeyJsonString), &fileKey)
+	if err != nil {
+		return nil
+	}
+	return &fileKey
 }
 
 func GenerateFileKey(privateKey, passphrase string, curve types.Curve) (*FileKey, error) {
@@ -97,14 +105,14 @@ func GenCipher(privateKey string, passphrase string, curve types.Curve) (*Cipher
 	if err != nil {
 		return nil, err
 	}
-	aesKey := key[:16]
-	hashKey := key[16:32] // compact mac
+	aesKey := key[:aes.BlockSize]
+	hashKey := key[aes.BlockSize:32] // compact mac
 
 	ivBytes, err := random(aes.BlockSize) //16 equals aes.BlockSize
 	if err != nil {
 		return nil, err
 	}
-	ciphertext, err := aesEncrypt(aesKey, ivBytes, hexutil.MustDecode(privateKey))
+	ciphertext, err := aesCtr(aesKey, ivBytes, hexutil.MustDecode(privateKey))
 	if err != nil {
 		return nil, err
 	}
@@ -131,8 +139,48 @@ func GenCipher(privateKey string, passphrase string, curve types.Curve) (*Cipher
 	}, nil
 }
 
-func (e *FileKey) Decrypt(passphrase string) {
+func (e *FileKey) Decrypt(passphrase string) (*ecdsa.PrivateKey, error) {
+	salt, err := hex.DecodeString(e.Cipher.Kdf.KdfParams.Salt)
+	if err != nil {
+		return nil, err
+	}
+	key, err := scryptKey([]byte(passphrase), salt, ScryptN)
+	if err != nil {
+		return nil, err
+	}
 
+	aesKey := key[:aes.BlockSize]
+	ciphertext, err := hex.DecodeString(e.Cipher.CipherText)
+	if err != nil {
+		return nil, err
+	}
+
+	var curve types.Curve
+	if e.IsGM {
+		curve = crypto.Sm2p256v1
+	} else {
+		curve = crypto.Secp256k1
+	}
+	hashKey := key[aes.BlockSize:32] // compact mac
+	actualMac := crypto.NewCrypto(curve).Hash(hashKey, ciphertext)
+	expectMac, err := hex.DecodeString(e.Cipher.Mac)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(actualMac.Bytes(), expectMac) {
+		return nil, fmt.Errorf("根据密码无法解析出私钥，请检查密码")
+	}
+
+	iv, err := hex.DecodeString(e.Cipher.Aes.Iv)
+	if err != nil {
+		return nil, err
+	}
+	privateKey, err := aesCtr(aesKey, iv, ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	return crypto.NewCrypto(curve).BytesToSK(privateKey)
 }
 
 // 使用KDF中的script(基于密码的密钥导出算法（Password-Based Key Derivation Function, KDF），其主要作用是通过消耗大量内存和计算资源来增强密码的安全性，防止暴力破解和专用硬件攻击)
@@ -147,7 +195,7 @@ func scryptKey(passphrase, salt []byte, n int) ([]byte, error) {
 	return scrypt.Key(passphrase, salt, n, ScryptR, ScryptP, ScryptKeyLen)
 }
 
-func aesEncrypt(key, iv, secretKey []byte) ([]byte, error) {
+func aesCtr(key, iv, secretKey []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
