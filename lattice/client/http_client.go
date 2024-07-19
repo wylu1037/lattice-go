@@ -29,7 +29,7 @@ type JsonRpcResponse[T any] struct {
 }
 
 type JsonRpcError struct {
-	Code    uint16 `json:"code,omitempty"`
+	Code    int16  `json:"code,omitempty"`
 	Message string `json:"message,omitempty"`
 }
 

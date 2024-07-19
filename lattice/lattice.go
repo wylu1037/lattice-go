@@ -226,7 +226,14 @@ func (strategy *WaitStrategy) RandomIntervalOpts() []retry.Option {
 }
 
 type Lattice interface {
+	// HttpApi return the http api
+	//
+	// Parameters:
+	//
+	// Returns:
+	//   - client.HttpApi
 	HttpApi() client.HttpApi
+
 	// Transfer 发起转账交易
 	//
 	// Parameters:
@@ -235,18 +242,76 @@ type Lattice interface {
 	//    - payload string: 交易备注
 	//
 	// Returns:
-	//    - common.Hash: 交易哈希
+	//    - *common.Hash: 交易哈希
 	//    - error
 	Transfer(ctx context.Context, linker, payload string) (*common.Hash, error)
 
+	// DeployContract 发起部署合约交易
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - data string: 合约数据
+	//   - payload string: 交易备注
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - error
 	DeployContract(ctx context.Context, data, payload string) (*common.Hash, error)
 
+	// CallContract 发起调用合约交易
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - contractAddress string: 合约地址
+	//   - data string: 调用的合约数据
+	//   - payload string: 交易备注
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - error
 	CallContract(ctx context.Context, contractAddress, data, payload string) (*common.Hash, error)
 
+	// TransferWaitReceipt 发起转账交易并等待回执
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - linker string
+	//   - payload string: 交易备注
+	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - *types.Receipt: 回执
+	//   - error
 	TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
 
+	// DeployContractWaitReceipt 发起部署合约交易并等待回执
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - data string
+	//   - payload string: 交易备注
+	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - *types.Receipt: 回执
+	//   - error
 	DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
 
+	// CallContractWaitReceipt 发起调用合约交易并等待回执
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - contractAddress string
+	//   - data string
+	//   - payload string: 交易备注
+	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - *types.Receipt: 回执
+	//   - error
 	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
 }
 
