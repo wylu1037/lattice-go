@@ -112,7 +112,16 @@ func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
 	return i.BytesToPK(bytes)
 }
 
+// BytesToPK 将[]byte公钥转为ecdsa.PublicKey
+//
+// Parameters:
+//   - pkBytes []byte: 非压缩公钥，64个字节
+//
+// Returns:
+//   - ecdsa.PublicKey
+//   - error
 func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
+	// fixme judge pk whether compressed, the len of compressed pk is 33 byte, else is 64
 	x, y := elliptic.Unmarshal(i.GetCurve(), pkBytes)
 	if x == nil {
 		return nil, fmt.Errorf("invalid public key")
@@ -256,4 +265,22 @@ func (i *Api) Hash(data ...[]byte) (h common.Hash) {
 	}
 	hash.Sum(h[:0])
 	return h
+}
+
+func (i *Api) Encrypt(data []byte, pk string) ([]byte, error) {
+	publicKey, err := i.HexToPK(pk)
+	if err != nil {
+		return nil, err
+	}
+
+	return sm2.Encrypt(convert.EcdsaPKToSm2PK(publicKey), data, rand.Reader, sm2.C1C2C3)
+}
+
+func (i *Api) Decrypt(cipher []byte, sk string) ([]byte, error) {
+	privateKey, err := i.HexToSK(sk)
+	if err != nil {
+		return nil, err
+	}
+
+	return sm2.Decrypt(convert.EcdsaSKToSm2SK(privateKey), cipher, sm2.C1C2C3)
 }

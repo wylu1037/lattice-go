@@ -62,5 +62,10 @@ type CryptographyApi interface {
 	GetCurve() elliptic.Curve
 	// EncodeHash Rlp encode and hash
 	EncodeHash(encodeFunc func(io.Writer)) common.Hash
+	// Hash 哈希
 	Hash(data ...[]byte) common.Hash
+	// Encrypt 非对称加密
+	Encrypt(data []byte, pk string) ([]byte, error)
+	// Decrypt 非对称解密
+	Decrypt(cipher []byte, sk string) ([]byte, error)
 }

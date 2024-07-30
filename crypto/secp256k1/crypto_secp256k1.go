@@ -219,3 +219,11 @@ func (i *Api) Hash(data ...[]byte) (h common.Hash) {
 	hash256.Sum(h[:0])
 	return h
 }
+
+func (i *Api) Encrypt(data []byte, pk string) ([]byte, error) {
+	return nil, nil
+}
+
+func (i *Api) Decrypt(cipher []byte, sk string) ([]byte, error) {
+	return nil, nil
+}
