@@ -22,15 +22,15 @@ var (
 	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
-func New() *Api {
-	return &Api{}
+func New() *GmApi {
+	return &GmApi{}
 }
 
-type Api struct {
+type GmApi struct {
 }
 
 // GenerateKeyPair 生成密钥对
-func (i *Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
+func (i *GmApi) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	sk, err := sm2.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (i *Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
-func (i *Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
+func (i *GmApi) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
 	if sk == nil {
 		return nil, errors.New("sk is nil")
 	}
@@ -68,7 +68,7 @@ func (i *Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 // SKToHexString 将私钥转为hex string
-func (i *Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
+func (i *GmApi) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	bytes, err := i.SKToBytes(sk)
 	if err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func (i *Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
 }
 
-func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
+func (i *GmApi) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 	bytes, err := hexutil.Decode(skHex)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 }
 
 // PKToBytes 将公钥转为[]byte
-func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
+func (i *GmApi) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 	if pk == nil || pk.X == nil || pk.Y == nil {
 		return nil, errors.New("pk is invalid")
 	}
@@ -95,7 +95,7 @@ func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 }
 
 // PKToHexString 将公钥转为hex string
-func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
+func (i *GmApi) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return "", err
@@ -103,7 +103,7 @@ func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return fmt.Sprintf("0x%s", hex.EncodeToString(bytes)), nil
 }
 
-func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
+func (i *GmApi) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
 	bytes, err := hexutil.Decode(pkHex)
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
 // Returns:
 //   - ecdsa.PublicKey
 //   - error
-func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
+func (i *GmApi) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
 	// fixme judge pk whether compressed, the len of compressed pk is 33 byte, else is 64
 	x, y := elliptic.Unmarshal(i.GetCurve(), pkBytes)
 	if x == nil {
@@ -134,7 +134,7 @@ func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
-func (i *Api) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
+func (i *GmApi) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
 	return i.bytesToSK(sk, true)
 }
 
@@ -145,7 +145,7 @@ func (i *Api) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
 // Returns
 //   - common.Address: 地址
 //   - error
-func (i *Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
+func (i *GmApi) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return common.Address{}, err
@@ -154,7 +154,7 @@ func (i *Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 }
 
 // Sign 签名
-func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
+func (i *GmApi) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
 	if len(hash) != constant.HashLength {
 		return nil, fmt.Errorf("hash is required to be exactly 32 bytes (%d)", len(hash))
 	}
@@ -190,7 +190,7 @@ func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err err
 }
 
 // SignatureToPK 从签名恢复公钥
-func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
+func (i *GmApi) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
 	e := new(big.Int).SetBytes(signature[65:])
 	signature = signature[:65]
 
@@ -199,14 +199,14 @@ func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
 }
 
 // Verify 验证签名
-func (i *Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
+func (i *GmApi) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
 	r := new(big.Int).SetBytes(signature[:32])
 	s := new(big.Int).SetBytes(signature[32:64])
 	return sm2.Sm2Verify(convert.EcdsaPKToSm2PK(pk), hash, nil, r, s)
 }
 
 // CompressPK 压缩公钥
-func (i *Api) CompressPK(pk *ecdsa.PublicKey) []byte {
+func (i *GmApi) CompressPK(pk *ecdsa.PublicKey) []byte {
 	if pk == nil || pk.X == nil || pk.Y == nil {
 		return nil
 	}
@@ -214,7 +214,7 @@ func (i *Api) CompressPK(pk *ecdsa.PublicKey) []byte {
 }
 
 // DecompressPK 解压缩公钥
-func (i *Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
+func (i *GmApi) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 	if len(pk) != 33 {
 		return nil, errors.New(fmt.Sprintf("DecompressPubKey length is wrong !,lenth is %d", len(pk)))
 	}
@@ -222,11 +222,11 @@ func (i *Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 }
 
 // GetCurve 获取椭圆曲线
-func (i *Api) GetCurve() elliptic.Curve {
+func (i *GmApi) GetCurve() elliptic.Curve {
 	return sm2.P256Sm2()
 }
 
-func (i *Api) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
+func (i *GmApi) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	privateKey := new(ecdsa.PrivateKey)
 	privateKey.PublicKey.Curve = i.GetCurve()
 	if strict && 8*len(skBytes) != privateKey.Params().BitSize {
@@ -251,14 +251,14 @@ func (i *Api) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) 
 	return privateKey, nil
 }
 
-func (i *Api) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
+func (i *GmApi) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
 	hash := sm3.New()
 	encodeFunc(hash)
 	hash.Sum(h[:0])
 	return h
 }
 
-func (i *Api) Hash(data ...[]byte) (h common.Hash) {
+func (i *GmApi) Hash(data ...[]byte) (h common.Hash) {
 	hash := sm3.New()
 	for _, b := range data {
 		hash.Write(b)
@@ -267,7 +267,7 @@ func (i *Api) Hash(data ...[]byte) (h common.Hash) {
 	return h
 }
 
-func (i *Api) Encrypt(data []byte, pk string) ([]byte, error) {
+func (i *GmApi) Encrypt(data []byte, pk string) ([]byte, error) {
 	publicKey, err := i.HexToPK(pk)
 	if err != nil {
 		return nil, err
@@ -276,7 +276,7 @@ func (i *Api) Encrypt(data []byte, pk string) ([]byte, error) {
 	return sm2.Encrypt(convert.EcdsaPKToSm2PK(publicKey), data, rand.Reader, sm2.C1C2C3)
 }
 
-func (i *Api) Decrypt(cipher []byte, sk string) ([]byte, error) {
+func (i *GmApi) Decrypt(cipher []byte, sk string) ([]byte, error) {
 	privateKey, err := i.HexToSK(sk)
 	if err != nil {
 		return nil, err

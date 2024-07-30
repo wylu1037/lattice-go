@@ -19,14 +19,14 @@ var (
 	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
 )
 
-func New() *Api {
-	return &Api{}
+func New() *NistApi {
+	return &NistApi{}
 }
 
-type Api struct {
+type NistApi struct {
 }
 
-func (i *Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
+func (i *NistApi) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	sk, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func (i *Api) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
 	return sk, nil
 }
 
-func (i *Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
+func (i *NistApi) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
 	if sk == nil {
 		return nil, errors.New("sk is nil")
 	}
@@ -54,7 +54,7 @@ func (i *Api) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 // SKToHexString 将私钥转为hex string
-func (i *Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
+func (i *NistApi) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	bytes, err := i.SKToBytes(sk)
 	if err != nil {
 		return "", err
@@ -62,7 +62,7 @@ func (i *Api) SKToHexString(sk *ecdsa.PrivateKey) (string, error) {
 	return hexutil.Encode(bytes), nil
 }
 
-func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
+func (i *NistApi) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 	bytes, err := hexutil.Decode(skHex)
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (i *Api) HexToSK(skHex string) (*ecdsa.PrivateKey, error) {
 }
 
 // PKToBytes 将公钥转为[]byte
-func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
+func (i *NistApi) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 	if pk == nil || pk.X == nil || pk.Y == nil {
 		return nil, errors.New("pk is invalid")
 	}
@@ -81,7 +81,7 @@ func (i *Api) PKToBytes(pk *ecdsa.PublicKey) ([]byte, error) {
 }
 
 // PKToHexString 将公钥转为hex string
-func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
+func (i *NistApi) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return "", err
@@ -89,7 +89,7 @@ func (i *Api) PKToHexString(pk *ecdsa.PublicKey) (string, error) {
 	return hexutil.Encode(bytes), nil
 }
 
-func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
+func (i *NistApi) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
 	bytes, err := hexutil.Decode(pkHex)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ func (i *Api) HexToPK(pkHex string) (*ecdsa.PublicKey, error) {
 	return i.BytesToPK(bytes)
 }
 
-func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
+func (i *NistApi) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
 	x, y := elliptic.Unmarshal(i.GetCurve(), pkBytes)
 	if x == nil {
 		return nil, fmt.Errorf("invalid public key")
@@ -111,11 +111,11 @@ func (i *Api) BytesToPK(pkBytes []byte) (*ecdsa.PublicKey, error) {
 	}, nil
 }
 
-func (i *Api) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
+func (i *NistApi) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
 	return i.bytesToSK(sk, true)
 }
 
-func (i *Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
+func (i *NistApi) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return common.Address{}, err
@@ -123,7 +123,7 @@ func (i *Api) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	return common.BytesToAddress(bytes), nil
 }
 
-func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
+func (i *NistApi) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err error) {
 	skBytes, err := i.SKToBytes(sk)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (i *Api) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err err
 }
 
 // SignatureToPK 从签名恢复公钥
-func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
+func (i *NistApi) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
 	if len(signature) == 97 {
 		signature = signature[:65]
 	}
@@ -145,7 +145,7 @@ func (i *Api) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error) {
 }
 
 // Verify 验证签名
-func (i *Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
+func (i *NistApi) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
 	pkBytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return false
@@ -157,12 +157,12 @@ func (i *Api) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) bool {
 }
 
 // CompressPK 压缩公钥
-func (i *Api) CompressPK(pk *ecdsa.PublicKey) []byte {
+func (i *NistApi) CompressPK(pk *ecdsa.PublicKey) []byte {
 	return secp256k1.CompressPubkey(pk.X, pk.Y)
 }
 
 // DecompressPK 解压缩公钥
-func (i *Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
+func (i *NistApi) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 	x, y := secp256k1.DecompressPubkey(pk)
 	if x == nil {
 		return nil, errors.New("invalid public key")
@@ -175,18 +175,18 @@ func (i *Api) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 }
 
 // GetCurve 获取椭圆曲线
-func (i *Api) GetCurve() elliptic.Curve {
+func (i *NistApi) GetCurve() elliptic.Curve {
 	return secp256k1.S256()
 }
 
-func (i *Api) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
+func (i *NistApi) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
 	hash := sha256.New()
 	encodeFunc(hash)
 	hash.Sum(h[:0])
 	return h
 }
 
-func (i *Api) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
+func (i *NistApi) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	privateKey := new(ecdsa.PrivateKey)
 	privateKey.PublicKey.Curve = i.GetCurve()
 	if strict && 8*len(skBytes) != privateKey.Params().BitSize {
@@ -211,7 +211,7 @@ func (i *Api) bytesToSK(skBytes []byte, strict bool) (*ecdsa.PrivateKey, error) 
 	return privateKey, nil
 }
 
-func (i *Api) Hash(data ...[]byte) (h common.Hash) {
+func (i *NistApi) Hash(data ...[]byte) (h common.Hash) {
 	hash256 := sha256.New()
 	for _, b := range data {
 		hash256.Write(b)
@@ -220,10 +220,10 @@ func (i *Api) Hash(data ...[]byte) (h common.Hash) {
 	return h
 }
 
-func (i *Api) Encrypt(data []byte, pk string) ([]byte, error) {
+func (i *NistApi) Encrypt(data []byte, pk string) ([]byte, error) {
 	return nil, nil
 }
 
-func (i *Api) Decrypt(cipher []byte, sk string) ([]byte, error) {
+func (i *NistApi) Decrypt(cipher []byte, sk string) ([]byte, error) {
 	return nil, nil
 }

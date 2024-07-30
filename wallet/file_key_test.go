@@ -9,8 +9,8 @@ import (
 )
 
 func TestGenerateFileKey(t *testing.T) {
-	privateKey := "0x23d5b2a2eb0a9c8b86d62cbc3955cfd1fb26ec576ecc379f402d0f5d2b27a7bb"
-	passphrase := "Root1234"
+	privateKey := "0xbd7ea728f7e6240507b321cb4a937a8d34ecfd39c275dbacf31ddb4793691dcc"
+	passphrase := "Aa123456"
 	fileKey, err := GenerateFileKey(privateKey, passphrase, crypto.Sm2p256v1)
 	assert.Nil(t, err)
 	bytes, err := json.Marshal(fileKey)
