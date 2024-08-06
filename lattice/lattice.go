@@ -123,8 +123,8 @@ const (
 	RandomInterval = "RandomInterval"
 )
 
-// WaitStrategy 等待回执策略
-type WaitStrategy struct {
+// RetryStrategy 等待回执策略
+type RetryStrategy struct {
 	// 具体的策略
 	Strategy  Strategy
 	Attempts  uint
@@ -132,7 +132,7 @@ type WaitStrategy struct {
 	MaxJitter time.Duration
 }
 
-func (strategy *WaitStrategy) GetWaitStrategyOpts() []retry.Option {
+func (strategy *RetryStrategy) GetRetryStrategyOpts() []retry.Option {
 	switch strategy.Strategy {
 	case BackOff:
 		return strategy.BackOffOpts()
@@ -145,52 +145,52 @@ func (strategy *WaitStrategy) GetWaitStrategyOpts() []retry.Option {
 	}
 }
 
-func NewBackOffWaitStrategy(attempts uint, initDelay time.Duration) *WaitStrategy {
-	return &WaitStrategy{
+func NewBackOffRetryStrategy(attempts uint, initDelay time.Duration) *RetryStrategy {
+	return &RetryStrategy{
 		Strategy: BackOff,
 		Attempts: attempts,
 		Delay:    initDelay,
 	}
 }
 
-// DefaultBackOffWaitStrategy 创建默认的BackOff等待策略
+// DefaultBackOffRetryStrategy 创建默认的BackOff等待策略
 //
 // Parameters:
 //
 // Returns:
-//   - WaitStrategy
-func DefaultBackOffWaitStrategy() *WaitStrategy {
-	return &WaitStrategy{
+//   - RetryStrategy
+func DefaultBackOffRetryStrategy() *RetryStrategy {
+	return &RetryStrategy{
 		Strategy: BackOff,
 		Attempts: 10,
 		Delay:    time.Millisecond * 200,
 	}
 }
 
-func NewFixedWaitStrategy(attempts uint, fixedDelay time.Duration) *WaitStrategy {
-	return &WaitStrategy{
+func NewFixedRetryStrategy(attempts uint, fixedDelay time.Duration) *RetryStrategy {
+	return &RetryStrategy{
 		Strategy: FixedInterval,
 		Attempts: attempts,
 		Delay:    fixedDelay,
 	}
 }
 
-// DefaultFixedWaitStrategy 创建默认的固定等待策略
+// DefaultFixedRetryStrategy 创建默认的固定等待策略
 //
 // Parameters:
 //
 // Returns:
-//   - WaitStrategy
-func DefaultFixedWaitStrategy() *WaitStrategy {
-	return &WaitStrategy{
+//   - RetryStrategy
+func DefaultFixedRetryStrategy() *RetryStrategy {
+	return &RetryStrategy{
 		Strategy: FixedInterval,
 		Attempts: 10,
 		Delay:    time.Millisecond * 150,
 	}
 }
 
-func NewRandomWaitStrategy(attempts uint, baseDelay time.Duration, maxJitter time.Duration) *WaitStrategy {
-	return &WaitStrategy{
+func NewRandomRetryStrategy(attempts uint, baseDelay time.Duration, maxJitter time.Duration) *RetryStrategy {
+	return &RetryStrategy{
 		Strategy:  RandomInterval,
 		Attempts:  attempts,
 		Delay:     baseDelay,
@@ -198,30 +198,30 @@ func NewRandomWaitStrategy(attempts uint, baseDelay time.Duration, maxJitter tim
 	}
 }
 
-// DefaultRandomWaitStrategy 创建默认的随机等待策略
+// DefaultRandomRetryStrategy 创建默认的随机等待策略
 //
 // Parameters:
 //
 // Returns:
-//   - WaitStrategy
-func DefaultRandomWaitStrategy() *WaitStrategy {
-	return &WaitStrategy{
+//   - RetryStrategy
+func DefaultRandomRetryStrategy() *RetryStrategy {
+	return &RetryStrategy{
 		Strategy:  RandomInterval,
 		Attempts:  10,
 		Delay:     time.Millisecond * 100,
-		MaxJitter: time.Millisecond * 500,
+		MaxJitter: time.Millisecond * 500, // 最大的随机抖动
 	}
 }
 
-func (strategy *WaitStrategy) BackOffOpts() []retry.Option {
+func (strategy *RetryStrategy) BackOffOpts() []retry.Option {
 	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.DelayType(retry.BackOffDelay)}
 }
 
-func (strategy *WaitStrategy) FixedIntervalOpts() []retry.Option {
+func (strategy *RetryStrategy) FixedIntervalOpts() []retry.Option {
 	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.DelayType(retry.FixedDelay)}
 }
 
-func (strategy *WaitStrategy) RandomIntervalOpts() []retry.Option {
+func (strategy *RetryStrategy) RandomIntervalOpts() []retry.Option {
 	return []retry.Option{retry.Attempts(strategy.Attempts), retry.Delay(strategy.Delay), retry.MaxJitter(strategy.MaxJitter), retry.DelayType(retry.RandomDelay)}
 }
 
@@ -277,13 +277,13 @@ type Lattice interface {
 	//   - ctx context.Context
 	//   - linker string
 	//   - payload string: 交易备注
-	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//   - retryStrategy *RetryStrategy: 等待回执策略
 	//
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+	TransferWaitReceipt(ctx context.Context, linker, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// DeployContractWaitReceipt 发起部署合约交易并等待回执
 	//
@@ -291,13 +291,13 @@ type Lattice interface {
 	//   - ctx context.Context
 	//   - data string
 	//   - payload string: 交易备注
-	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//   - retryStrategy *RetryStrategy: 等待回执策略
 	//
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+	DeployContractWaitReceipt(ctx context.Context, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// CallContractWaitReceipt 发起调用合约交易并等待回执
 	//
@@ -306,13 +306,13 @@ type Lattice interface {
 	//   - contractAddress string
 	//   - data string
 	//   - payload string: 交易备注
-	//   - waitStrategy *WaitStrategy: 等待回执策略
+	//   - retryStrategy *RetryStrategy: 等待回执策略
 	//
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error)
+	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
@@ -404,7 +404,7 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 	return hash, nil
 }
 
-func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	var err error
 	var receipt *types.Receipt
 	err = retry.Do(
@@ -415,7 +415,7 @@ func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, waitStra
 			}
 			return nil
 		},
-		waitStrategy.GetWaitStrategyOpts()...,
+		retryStrategy.GetRetryStrategyOpts()...,
 	)
 
 	if err != nil {
@@ -424,29 +424,29 @@ func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, waitStra
 	return hash, receipt, nil
 }
 
-func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	hash, err := svc.Transfer(ctx, linker, payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, waitStrategy)
+	return svc.waitReceipt(ctx, hash, retryStrategy)
 }
 
-func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	hash, err := svc.DeployContract(ctx, data, payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, waitStrategy)
+	return svc.waitReceipt(ctx, hash, retryStrategy)
 }
 
-func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, waitStrategy *WaitStrategy) (*common.Hash, *types.Receipt, error) {
+func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	hash, err := svc.CallContract(ctx, contractAddress, data, payload)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, waitStrategy)
+	return svc.waitReceipt(ctx, hash, retryStrategy)
 }
