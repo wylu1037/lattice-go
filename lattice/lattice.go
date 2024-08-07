@@ -244,7 +244,7 @@ type Lattice interface {
 	// Returns:
 	//    - *common.Hash: 交易哈希
 	//    - error
-	Transfer(ctx context.Context, linker, payload string) (*common.Hash, error)
+	Transfer(ctx context.Context, linker, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// DeployContract 发起部署合约交易
 	//
@@ -256,7 +256,7 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	DeployContract(ctx context.Context, data, payload string) (*common.Hash, error)
+	DeployContract(ctx context.Context, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// CallContract 发起调用合约交易
 	//
@@ -269,7 +269,7 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	CallContract(ctx context.Context, contractAddress, data, payload string) (*common.Hash, error)
+	CallContract(ctx context.Context, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// TransferWaitReceipt 发起转账交易并等待回执
 	//
@@ -283,7 +283,7 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	TransferWaitReceipt(ctx context.Context, linker, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	TransferWaitReceipt(ctx context.Context, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// DeployContractWaitReceipt 发起部署合约交易并等待回执
 	//
@@ -297,7 +297,7 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	DeployContractWaitReceipt(ctx context.Context, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	DeployContractWaitReceipt(ctx context.Context, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// CallContractWaitReceipt 发起调用合约交易并等待回执
 	//
@@ -312,14 +312,16 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	PreCallContract(ctx context.Context, contractAddress, data, payload string) (*types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
 	return svc.httpApi
 }
 
-func (svc *lattice) Transfer(ctx context.Context, linker, payload string) (*common.Hash, error) {
+func (svc *lattice) Transfer(ctx context.Context, linker, payload string, amount, joule uint64) (*common.Hash, error) {
 	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
 	if err != nil {
 		return nil, err
@@ -330,6 +332,8 @@ func (svc *lattice) Transfer(ctx context.Context, linker, payload string) (*comm
 		SetOwner(svc.Credential.AccountAddress).
 		SetLinker(linker).
 		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
 		Build()
 
 	err = transaction.SignTX(svc.Chain.ChainId, svc.Chain.GetCurve(), svc.Credential.GetSK())
@@ -344,7 +348,7 @@ func (svc *lattice) Transfer(ctx context.Context, linker, payload string) (*comm
 	return hash, nil
 }
 
-func (svc *lattice) DeployContract(ctx context.Context, data, payload string) (*common.Hash, error) {
+func (svc *lattice) DeployContract(ctx context.Context, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
 	if err != nil {
 		return nil, err
@@ -356,6 +360,8 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string) (*
 		SetLinker(zeroAddress).
 		SetCode(data).
 		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
 		Build()
 
 	cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
@@ -374,7 +380,7 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string) (*
 	return hash, nil
 }
 
-func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, payload string) (*common.Hash, error) {
+func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
 	if err != nil {
 		return nil, err
@@ -386,6 +392,8 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
 		Build()
 
 	cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
@@ -424,8 +432,8 @@ func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, retryStr
 	return hash, receipt, nil
 }
 
-func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.Transfer(ctx, linker, payload)
+func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.Transfer(ctx, linker, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -433,8 +441,8 @@ func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload str
 	return svc.waitReceipt(ctx, hash, retryStrategy)
 }
 
-func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.DeployContract(ctx, data, payload)
+func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployContract(ctx, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -442,11 +450,36 @@ func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload
 	return svc.waitReceipt(ctx, hash, retryStrategy)
 }
 
-func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.CallContract(ctx, contractAddress, data, payload)
+func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.CallContract(ctx, contractAddress, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return svc.waitReceipt(ctx, hash, retryStrategy)
+}
+
+func (svc *lattice) PreCallContract(ctx context.Context, contractAddress, data, payload string) (*types.Receipt, error) {
+	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
+		SetLatestBlock(
+			&types.LatestBlock{
+				Height:          0,
+				Hash:            common.HexToHash(""),
+				DaemonBlockHash: common.HexToHash(""),
+			}).
+		SetOwner(svc.Credential.AccountAddress).
+		SetLinker(contractAddress).
+		SetCode(data).
+		SetPayload(payload).
+		Build()
+
+	//cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
+	//dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
+	//transaction.CodeHash = dataHash
+
+	receipt, err := svc.httpApi.PreCallContract(ctx, transaction)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, nil
 }

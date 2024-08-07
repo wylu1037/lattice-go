@@ -3,6 +3,7 @@ package block
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"lattice-go/common/types"
+	"math/big"
 	"time"
 )
 
@@ -13,6 +14,8 @@ type TransactionBuilder interface {
 	SetLinker(linker string) TransactionBuilder
 	SetCode(code string) TransactionBuilder
 	SetPayload(payload string) TransactionBuilder
+	SetAmount(amount uint64) TransactionBuilder
+	SetJoule(joule uint64) TransactionBuilder
 }
 
 type transactionBuilder struct {
@@ -57,5 +60,19 @@ func (builder *transactionBuilder) SetCode(code string) TransactionBuilder {
 
 func (builder *transactionBuilder) SetPayload(payload string) TransactionBuilder {
 	builder.Transaction.Payload = payload
+	return builder
+}
+
+func (builder *transactionBuilder) SetAmount(amount uint64) TransactionBuilder {
+	bigAmount := big.NewInt(0)
+	bigAmount.SetUint64(amount)
+	builder.Transaction.Amount = bigAmount
+	return builder
+}
+
+func (builder *transactionBuilder) SetJoule(joule uint64) TransactionBuilder {
+	bigJoule := big.NewInt(0)
+	bigJoule.SetUint64(joule)
+	builder.Transaction.Joule = bigJoule
 	return builder
 }

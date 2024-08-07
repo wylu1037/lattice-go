@@ -63,7 +63,7 @@ type Transaction struct {
 	Owner       string          `json:"owner"`
 	Linker      string          `json:"linker"`
 	Amount      *big.Int        `json:"amount"`
-	Joule       uint64          `json:"joule"`
+	Joule       *big.Int        `json:"joule"`
 	Difficulty  uint64          `json:"difficulty"`
 	Pow         *big.Int        `json:"pow"`
 	ProofOfWork *big.Int        `json:"proofOfWork"`

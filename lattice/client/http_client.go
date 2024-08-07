@@ -80,6 +80,17 @@ type HttpApi interface {
 	//    - o
 	SendSignedTransaction(ctx context.Context, signedTX *block.Transaction) (*common.Hash, error)
 
+	// PreCallContract 预执行合约
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - unsignedTX *block.Transaction: 未签名的交易
+	//
+	// Returns:
+	//   - *types.Receipt
+	//   - error
+	PreCallContract(ctx context.Context, unsignedTX *block.Transaction) (*types.Receipt, error)
+
 	// GetReceipt 获取交易回执
 	//
 	// Parameters:
@@ -130,6 +141,17 @@ func (api *httpApi) GetLatestBlock(_ context.Context, accountAddress string) (*t
 
 func (api *httpApi) SendSignedTransaction(_ context.Context, signedTX *block.Transaction) (*common.Hash, error) {
 	response, err := Post[common.Hash](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) PreCallContract(ctx context.Context, unsignedTX *block.Transaction) (*types.Receipt, error) {
+	response, err := Post[types.Receipt](api.Url, NewJsonRpcBody("wallet_preExecuteContract", unsignedTX), api.newHeaders(), api.transport)
 	if err != nil {
 		return nil, err
 	}
