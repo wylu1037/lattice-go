@@ -21,7 +21,7 @@ var latticeClient = NewLattice(
 		ChainId: 1,
 		Curve:   crypto.Sm2p256v1,
 	},
-	&NodeConfig{
+	&ConnectingNodeConfig{
 		Ip:       "192.168.1.185",
 		HttpPort: 13000,
 	},

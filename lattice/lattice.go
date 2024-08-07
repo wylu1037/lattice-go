@@ -24,22 +24,22 @@ const (
 	zeroAddress       = "zltc_QLbz7JHiBTspS962RLKV8GndWFwjA5K66"
 )
 
-func NewLattice(chainConfig *ChainConfig, nodeConfig *NodeConfig, identityConfig *CredentialConfig, options *Options) Lattice {
+func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options) Lattice {
 	return &lattice{
-		Chain:      chainConfig,
-		Node:       nodeConfig,
-		Credential: identityConfig,
-		Options:    options,
-		httpApi:    client.NewHttpApi(nodeConfig.GetHttpUrl(), strconv.FormatUint(chainConfig.ChainId, 10), options.GetTransport()),
+		ChainConfig:          chainConfig,
+		ConnectingNodeConfig: connectingNodeConfig,
+		CredentialConfig:     identityConfig,
+		Options:              options,
+		httpApi:              client.NewHttpApi(connectingNodeConfig.GetHttpUrl(), strconv.FormatUint(chainConfig.ChainId, 10), options.GetTransport()),
 	}
 }
 
 type lattice struct {
-	httpApi    client.HttpApi
-	Chain      *ChainConfig
-	Node       *NodeConfig
-	Credential *CredentialConfig
-	Options    *Options
+	httpApi              client.HttpApi
+	ChainConfig          *ChainConfig
+	ConnectingNodeConfig *ConnectingNodeConfig
+	CredentialConfig     *CredentialConfig
+	Options              *Options
 }
 
 // ChainConfig 链配置
@@ -48,8 +48,8 @@ type ChainConfig struct {
 	Curve   types.Curve
 }
 
-// NodeConfig 节点配置
-type NodeConfig struct {
+// ConnectingNodeConfig 节点配置
+type ConnectingNodeConfig struct {
 	Insecure      bool
 	Ip            string
 	HttpPort      uint16
@@ -107,11 +107,11 @@ func (identity *CredentialConfig) GetSK() string {
 	return identity.PrivateKey
 }
 
-func (node *NodeConfig) GetHttpUrl() string {
+func (node *ConnectingNodeConfig) GetHttpUrl() string {
 	return fmt.Sprintf("%s://%s:%d", lo.Ternary(node.Insecure, httpsProtocol, httpProtocol), node.Ip, node.HttpPort)
 }
 
-func (node *NodeConfig) GetWebsocketUrl() string {
+func (node *ConnectingNodeConfig) GetWebsocketUrl() string {
 	return fmt.Sprintf("%s://%s:%d", websocketProtocol, node.Ip, node.WebsocketPort)
 }
 
@@ -314,6 +314,17 @@ type Lattice interface {
 	//   - error
 	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
+	// PreCallContract 预执行合约，预执行的交易不会上链
+	//
+	// Parameters:
+	//   - ctx context.Context:
+	//   - contractAddress string: 合约地址
+	//   - data string: 执行的合约代码
+	//   - payload string: 交易备注
+	//
+	// Returns:
+	//   - *types.Receipt: 交易回执
+	//   - error: 预执行的错误
 	PreCallContract(ctx context.Context, contractAddress, data, payload string) (*types.Receipt, error)
 }
 
@@ -322,21 +333,21 @@ func (svc *lattice) HttpApi() client.HttpApi {
 }
 
 func (svc *lattice) Transfer(ctx context.Context, linker, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
+	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeSend).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.Credential.AccountAddress).
+		SetOwner(svc.CredentialConfig.AccountAddress).
 		SetLinker(linker).
 		SetPayload(payload).
 		SetAmount(amount).
 		SetJoule(joule).
 		Build()
 
-	err = transaction.SignTX(svc.Chain.ChainId, svc.Chain.GetCurve(), svc.Credential.GetSK())
+	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -349,14 +360,14 @@ func (svc *lattice) Transfer(ctx context.Context, linker, payload string, amount
 }
 
 func (svc *lattice) DeployContract(ctx context.Context, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
+	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeDeployContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.Credential.AccountAddress).
+		SetOwner(svc.CredentialConfig.AccountAddress).
 		SetLinker(zeroAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -364,11 +375,11 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string, am
 		SetJoule(joule).
 		Build()
 
-	cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
+	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	err = transaction.SignTX(svc.Chain.ChainId, svc.Chain.GetCurve(), svc.Credential.GetSK())
+	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -381,14 +392,14 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string, am
 }
 
 func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.Credential.AccountAddress)
+	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.Credential.AccountAddress).
+		SetOwner(svc.CredentialConfig.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -396,11 +407,11 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 		SetJoule(joule).
 		Build()
 
-	cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
+	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	err = transaction.SignTX(svc.Chain.ChainId, svc.Chain.GetCurve(), svc.Credential.GetSK())
+	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -467,15 +478,11 @@ func (svc *lattice) PreCallContract(ctx context.Context, contractAddress, data, 
 				Hash:            common.HexToHash(""),
 				DaemonBlockHash: common.HexToHash(""),
 			}).
-		SetOwner(svc.Credential.AccountAddress).
+		SetOwner(svc.CredentialConfig.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
 		Build()
-
-	//cryptoInstance := crypto.NewCrypto(svc.Chain.Curve)
-	//dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
-	//transaction.CodeHash = dataHash
 
 	receipt, err := svc.httpApi.PreCallContract(ctx, transaction)
 	if err != nil {
