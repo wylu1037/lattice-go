@@ -1,6 +1,8 @@
 package convert
 
-import "encoding/hex"
+import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
+)
 
 // BytesToBytes32Arr 将[]byte转为[][32]byte，长度不足时在数组尾部补0
 // Parameters:
@@ -19,13 +21,20 @@ func BytesToBytes32Arr(bytes []byte) [][32]byte {
 	return bytes32Arr
 }
 
+// BytesToBytes32HexArr 将[]byte转为[]string数组
+//
+// Parameters:
+//   - bytes []byte
+//
+// Returns:
+//   - []string
 func BytesToBytes32HexArr(bytes []byte) []string {
 	var bytes32Arr []string
 	bytes = PadToMultipleOf32(bytes)
 	for i := 0; i < len(bytes); i += 32 {
 		var b32 [32]byte
 		copy(b32[:], bytes[i:i+32])
-		bytes32Arr = append(bytes32Arr, hex.EncodeToString(b32[:]))
+		bytes32Arr = append(bytes32Arr, hexutil.Encode(b32[:]))
 	}
 	return bytes32Arr
 }

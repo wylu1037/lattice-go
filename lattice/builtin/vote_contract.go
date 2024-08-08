@@ -58,7 +58,8 @@ func (c *voteContract) Disapprove(proposalId string) (string, error) {
 }
 
 var VoteBuiltinContract = Contract{
-	Address: "zltc_amgWuhifLRUoZc3GSbv9wUUz6YUfTuWy5",
+	Description: "提案投票合约",
+	Address:     "zltc_amgWuhifLRUoZc3GSbv9wUUz6YUfTuWy5",
 	AbiString: `[
 		{
 			"inputs": [
@@ -142,5 +143,4 @@ var VoteBuiltinContract = Contract{
 			"type": "function"
 		}
 	]`,
-	Description: "提案投票合约",
 }

@@ -22,6 +22,7 @@ const (
 	httpsProtocol     = "https"
 	websocketProtocol = "ws"
 	zeroAddress       = "zltc_QLbz7JHiBTspS962RLKV8GndWFwjA5K66"
+	zeroHash          = "0x0000000000000000000000000000000000000000000000000000000000000000"
 )
 
 func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options) Lattice {
@@ -475,8 +476,8 @@ func (svc *lattice) PreCallContract(ctx context.Context, contractAddress, data, 
 		SetLatestBlock(
 			&types.LatestBlock{
 				Height:          0,
-				Hash:            common.HexToHash(""),
-				DaemonBlockHash: common.HexToHash(""),
+				Hash:            common.HexToHash(zeroHash),
+				DaemonBlockHash: common.HexToHash(zeroHash),
 			}).
 		SetOwner(svc.CredentialConfig.AccountAddress).
 		SetLinker(contractAddress).
