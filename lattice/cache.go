@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/allegro/bigcache/v3"
+	"github.com/rs/zerolog/log"
 	"lattice-go/common/types"
 	"lattice-go/lattice/client"
 	"sync"
@@ -125,11 +126,11 @@ func (c *memoryBlockCache) SetBlock(chainId, address string, block *types.Latest
 	}
 	bytes, err := json.Marshal(block)
 	if err != nil {
-		fmt.Println(err)
+		log.Error().Err(err).Msgf("json序列化block失败，chainId: %s, accountAddress: %s", chainId, address)
 		return err
 	}
 	if err := c.memoryCacheApi.Set(fmt.Sprintf("%s_%s", chainId, address), bytes); err != nil {
-		fmt.Println(err)
+		log.Error().Err(err).Msgf("设置区块缓存信息失败，chainId: %s, accountAddress: %s", chainId, address)
 		return err
 	}
 
@@ -159,10 +160,12 @@ func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock
 		if errors.Is(err, bigcache.ErrEntryNotFound) {
 			return c.httpApi.GetLatestBlock(context.Background(), chainId, address)
 		}
+		log.Error().Err(err).Msgf("获取区块缓存信息失败，chainId: %s, accountAddress: %s", chainId, address)
 		return nil, err
 	}
 	cacheBlock := new(types.LatestBlock)
 	if err := json.Unmarshal(cacheBlockBytes, cacheBlock); err != nil {
+		log.Error().Err(err).Msgf("json序列化block失败，chainId: %s, accountAddress: %s", chainId, address)
 		return nil, err
 	}
 	// judge daemon hash expiration time
@@ -174,6 +177,7 @@ func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock
 	if time.Now().After(daemonHashExpireAt.(time.Time)) {
 		block, err := c.httpApi.GetLatestBlock(context.Background(), chainId, address)
 		if err != nil {
+			log.Error().Err(err).Msgf("请求节点获取最新区块信息失败，chainId: %s, accountAddress: %s", chainId, address)
 			return nil, err
 		}
 		c.daemonHashExpireAtMap.Store(chainId, time.Now().Add(c.daemonHashExpirationDuration))

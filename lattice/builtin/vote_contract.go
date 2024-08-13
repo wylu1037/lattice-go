@@ -10,15 +10,33 @@ func NewVoteContract() VoteContract {
 
 type VoteContract interface {
 	vote(proposalId string, approve bool) (string, error)
+
+	// Approve 投赞同票
+	//
+	// Parameters:
+	//   - proposalId string: 提案ID
+	//
+	// Returns:
+	//   - string
+	//   - error
 	Approve(proposalId string) (string, error)
+
+	// Disapprove 投反对票
+	//
+	// Parameters:
+	//   - proposalId string: 提案ID
+	//
+	// Returns:
+	//   - string
+	//   - error
 	Disapprove(proposalId string) (string, error)
 }
 
 type voteContract struct{}
 
 const (
-	disapprove = iota
-	approve
+	disapprove = iota // 反对
+	approve           // 同意
 )
 
 func (c *voteContract) vote(proposalId string, approve bool) (string, error) {

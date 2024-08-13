@@ -10,6 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.5
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
+	github.com/rs/zerolog v1.33.0
 	github.com/samber/lo v1.44.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tjfoc/gmsm v1.4.1
@@ -28,6 +29,8 @@ require (
 	github.com/defiweb/go-rlp v0.3.0 // indirect
 	github.com/defiweb/go-sigparser v0.6.0 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/rs/zerolog/log"
 	"io"
 	"lattice-go/common/types"
 	"lattice-go/lattice/block"
@@ -172,6 +173,7 @@ type HttpApi interface {
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - chainId string
 	//   - accountAddress string: 账户地址，zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
 	//
 	// Returns:
@@ -183,6 +185,7 @@ type HttpApi interface {
 	//
 	// Parameters:
 	//    - ctx context.Context
+	//    - chainId string
 	//    - signedTX *block.Transaction
 	//
 	// Returns:
@@ -193,6 +196,7 @@ type HttpApi interface {
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - chainId string
 	//   - unsignedTX *block.Transaction: 未签名的交易
 	//
 	// Returns:
@@ -204,6 +208,7 @@ type HttpApi interface {
 	//
 	// Parameters:
 	//    - ctx context.Context
+	//    - chainId string
 	//    - hash string
 	//
 	// Returns:
@@ -215,8 +220,9 @@ type HttpApi interface {
 	//
 	// Parameters:
 	//    - ctx context.Context
-	//    - contractAddress string
-	//    - state types.ProposalState
+	//    - chainId string: 链ID
+	//    - contractAddress string: 合约地址
+	//    - state types.ProposalState: 提案状态
 	//
 	// Returns:
 	//    - types.Proposal[types.ContractLifecycleProposal]
@@ -310,6 +316,7 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 //   - []byte: 响应内容
 //   - error: 错误
 func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
+	log.Debug().Msgf("开始发送JsonRpc请求，url: %s, body: %+v", url, jsonRpcBody)
 	bytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
 		return nil, err
@@ -318,6 +325,7 @@ func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string
 
 	request, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to create http request")
 		return nil, err
 	}
 
@@ -330,19 +338,22 @@ func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string
 	request.TransferEncoding = []string{}
 	response, err := client.Do(request)
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to send http request")
 		return nil, err
 	}
 	defer func(Body io.ReadCloser) {
 		if err := Body.Close(); err != nil {
-			fmt.Println("Failed to close response body")
+			log.Error().Err(err).Msg("Failed to close response body")
 		}
 	}(response.Body)
 
 	if res, err := io.ReadAll(response.Body); err != nil {
+		log.Error().Err(err).Msg("Failed to read response body")
 		return nil, err
 	} else {
 		var t JsonRpcResponse[*T]
 		if err := json.Unmarshal(res, &t); err != nil {
+			log.Error().Err(err).Msg("Failed to unmarshal response body")
 			return nil, err
 		}
 

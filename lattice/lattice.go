@@ -7,6 +7,7 @@ import (
 	"github.com/avast/retry-go"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
@@ -176,14 +177,12 @@ func NewBackOffRetryStrategy(attempts uint, initDelay time.Duration) *RetryStrat
 
 // DefaultBackOffRetryStrategy 创建默认的BackOff等待策略
 //
-// Parameters:
-//
 // Returns:
 //   - RetryStrategy
 func DefaultBackOffRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy: BackOff,
-		Attempts: 10,
+		Attempts: 15,
 		Delay:    time.Millisecond * 200,
 	}
 }
@@ -198,15 +197,13 @@ func NewFixedRetryStrategy(attempts uint, fixedDelay time.Duration) *RetryStrate
 
 // DefaultFixedRetryStrategy 创建默认的固定等待策略
 //
-// Parameters:
-//
 // Returns:
 //   - RetryStrategy
 func DefaultFixedRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy: FixedInterval,
-		Attempts: 10,
-		Delay:    time.Millisecond * 150,
+		Attempts: 15,
+		Delay:    time.Millisecond * 100,
 	}
 }
 
@@ -228,7 +225,7 @@ func NewRandomRetryStrategy(attempts uint, baseDelay time.Duration, maxJitter ti
 func DefaultRandomRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy:  RandomInterval,
-		Attempts:  10,
+		Attempts:  15,
 		Delay:     time.Millisecond * 100,
 		MaxJitter: time.Millisecond * 500, // 最大的随机抖动
 	}
@@ -354,11 +351,14 @@ func (svc *lattice) HttpApi() client.HttpApi {
 }
 
 func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起转账交易，chainId: %s, linker: %s, payload: %s, amount: %d, joule: %d", chainId, linker, payload, amount, joule)
+
 	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
 	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
 
 	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 
@@ -373,32 +373,39 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 
 	chainIdAsInt, err := strconv.Atoi(chainId)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 
 	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
 		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
-			fmt.Println(err)
+			log.Error().Err(err)
 		}
 	}
+	log.Debug().Msgf("结束转账交易，哈希为：%s", hash.String())
 	return hash, nil
 }
 
 func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起部署合约交易，chainId: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, data, payload, amount, joule)
+
 	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
 	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
 
 	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 
@@ -418,28 +425,33 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 
 	chainIdAsInt, err := strconv.Atoi(chainId)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 
 	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
 		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
-			fmt.Println(err)
+			log.Error().Err(err)
 		}
 	}
-
+	log.Debug().Msgf("结束部署合约，哈希为：%s", hash.String())
 	return hash, nil
 }
 
 func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起调用合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, contractAddress, data, payload, amount, joule)
+
 	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
 	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
 
@@ -464,24 +476,27 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 
 	chainIdAsInt, err := strconv.Atoi(chainId)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	}
 
 	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
+		log.Error().Err(err)
 		return nil, err
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
 		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
-			fmt.Println(err)
+			log.Error().Err(err)
 		}
 	}
-
+	log.Debug().Msgf("结束调用合约，哈希为：%s", hash.String())
 	return hash, nil
 }
 
@@ -492,6 +507,7 @@ func (svc *lattice) waitReceipt(ctx context.Context, chainId string, hash *commo
 		func() error {
 			receipt, err = svc.httpApi.GetReceipt(ctx, chainId, hash.String())
 			if err != nil {
+				log.Error().Err(err)
 				return err
 			}
 			return nil
@@ -500,6 +516,7 @@ func (svc *lattice) waitReceipt(ctx context.Context, chainId string, hash *commo
 	)
 
 	if err != nil {
+		log.Error().Err(err)
 		return hash, nil, err
 	}
 	return hash, receipt, nil

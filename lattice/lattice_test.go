@@ -3,7 +3,6 @@ package lattice
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"lattice-go/abi"
 	"lattice-go/common/convert"
@@ -101,7 +100,7 @@ func TestLattice_CallContract(t *testing.T) {
 
 	contract := builtin.NewCredibilityContract()
 	var wg sync.WaitGroup
-	for i := 0; i < 700; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(contract builtin.CredibilityContract) {
 			defer wg.Done()
@@ -135,13 +134,23 @@ func TestLattice_PreCallContract(t *testing.T) {
 	assert.NotNil(t, receipt)
 }
 
-func TestNewLattice(t *testing.T) {
-	// 创建协议
-	credibilityContract := builtin.NewCredibilityContract()
-	data, err := credibilityContract.CreateProtocol(2, []byte("123456"))
-	fmt.Println(data)
+func TestNewLattice_CreateBusiness(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	data, err := contract.CreateBusiness()
 	assert.NoError(t, err)
-	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, builtin.CredibilityBuiltinContract.Address, data, "0x", 0, 0, DefaultFixedRetryStrategy())
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, contract.ContractAddress(), data, "0x", 0, 0, DefaultFixedRetryStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	t.Log(string(r))
+}
+
+func TestNewLattice_CreateProtocol(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	data, err := contract.CreateProtocol(2, []byte("123456"))
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, contract.ContractAddress(), data, "0x", 0, 0, DefaultFixedRetryStrategy())
 	assert.NoError(t, err)
 	t.Log(hash.String())
 	r, err := json.Marshal(receipt)

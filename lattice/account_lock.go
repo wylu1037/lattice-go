@@ -17,13 +17,15 @@ type AccountLock interface {
 	// Obtain 获取账户锁
 	//
 	// Parameters:
-	//   -chainId, address string
+	//   - chainId string: 链ID
+	//   - address string: 账户地址
 	Obtain(chainId, address string)
 
 	// Unlock 释放账户锁
 	//
 	// Parameters:
-	//   - chainId, address string
+	//   - chainId string: 链ID
+	//   - address string: 账户地址
 	Unlock(chainId, address string)
 }
 
