@@ -25,13 +25,28 @@ const (
 	zeroHash          = "0x0000000000000000000000000000000000000000000000000000000000000000"
 )
 
-func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options) Lattice {
+func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options, blockCache BlockCache) Lattice {
+	initHttpClientArgs := &client.HttpApiInitParam{
+		Url:                connectingNodeConfig.GetHttpUrl(),
+		Transport:          options.GetTransport(),
+		JwtSecret:          connectingNodeConfig.JwtSecret,
+		ExpirationDuration: connectingNodeConfig.JwtTokenExpirationDuration,
+	}
+	httpApi := client.NewHttpApi(initHttpClientArgs)
+
+	if blockCache == nil {
+		blockCache = newDisabledMemoryBlockCache(httpApi)
+	} else {
+		blockCache.SetHttpApi(httpApi)
+	}
+
 	return &lattice{
 		ChainConfig:          chainConfig,
 		ConnectingNodeConfig: connectingNodeConfig,
 		CredentialConfig:     identityConfig,
 		Options:              options,
-		httpApi:              client.NewHttpApi(connectingNodeConfig.GetHttpUrl(), strconv.FormatUint(chainConfig.ChainId, 10), options.GetTransport()),
+		httpApi:              httpApi,
+		BlockCache:           blockCache,
 	}
 }
 
@@ -41,20 +56,23 @@ type lattice struct {
 	ConnectingNodeConfig *ConnectingNodeConfig
 	CredentialConfig     *CredentialConfig
 	Options              *Options
+	BlockCache           BlockCache
 }
 
 // ChainConfig 链配置
 type ChainConfig struct {
-	ChainId uint64
-	Curve   types.Curve
+	Curve     types.Curve // crypto.Secp256k1 or crypto.Sm2p256v1
+	TokenLess bool        // false:有通证链，true:无通证链
 }
 
 // ConnectingNodeConfig 节点配置
 type ConnectingNodeConfig struct {
-	Insecure      bool
-	Ip            string
-	HttpPort      uint16
-	WebsocketPort uint16
+	Insecure                   bool
+	Ip                         string
+	HttpPort                   uint16
+	WebsocketPort              uint16
+	JwtSecret                  string
+	JwtTokenExpirationDuration time.Duration
 }
 
 // CredentialConfig 凭证配置
@@ -245,7 +263,7 @@ type Lattice interface {
 	// Returns:
 	//    - *common.Hash: 交易哈希
 	//    - error
-	Transfer(ctx context.Context, linker, payload string, amount, joule uint64) (*common.Hash, error)
+	Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// DeployContract 发起部署合约交易
 	//
@@ -257,7 +275,7 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	DeployContract(ctx context.Context, data, payload string, amount, joule uint64) (*common.Hash, error)
+	DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// CallContract 发起调用合约交易
 	//
@@ -270,7 +288,7 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	CallContract(ctx context.Context, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
+	CallContract(ctx context.Context, contractAddress, chainId, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// TransferWaitReceipt 发起转账交易并等待回执
 	//
@@ -284,7 +302,7 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	TransferWaitReceipt(ctx context.Context, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	TransferWaitReceipt(ctx context.Context, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// DeployContractWaitReceipt 发起部署合约交易并等待回执
 	//
@@ -298,7 +316,7 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	DeployContractWaitReceipt(ctx context.Context, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	DeployContractWaitReceipt(ctx context.Context, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// CallContractWaitReceipt 发起调用合约交易并等待回执
 	//
@@ -313,7 +331,7 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	CallContractWaitReceipt(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// PreCallContract 预执行合约，预执行的交易不会上链
 	//
@@ -326,15 +344,15 @@ type Lattice interface {
 	// Returns:
 	//   - *types.Receipt: 交易回执
 	//   - error: 预执行的错误
-	PreCallContract(ctx context.Context, contractAddress, data, payload string) (*types.Receipt, error)
+	PreCallContract(ctx context.Context, chainId, contractAddress, data, payload string) (*types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
 	return svc.httpApi
 }
 
-func (svc *lattice) Transfer(ctx context.Context, linker, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
+func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
+	latestBlock, err := svc.BlockCache.GetBlock(chainId, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -348,20 +366,30 @@ func (svc *lattice) Transfer(ctx context.Context, linker, payload string, amount
 		SetJoule(joule).
 		Build()
 
-	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	chainIdAsInt, err := strconv.Atoi(chainId)
+	if err != nil {
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, transaction)
+	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
+	} else {
+		latestBlock.Hash = *hash
+		latestBlock.IncrHeight()
+		if err := svc.BlockCache.SetBlock(chainId, svc.CredentialConfig.AccountAddress, latestBlock); err != nil {
+			fmt.Println(err)
+		}
 	}
 	return hash, nil
 }
 
-func (svc *lattice) DeployContract(ctx context.Context, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
+func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
+	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, chainId, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -380,20 +408,24 @@ func (svc *lattice) DeployContract(ctx context.Context, data, payload string, am
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	chainIdAsInt, err := strconv.Atoi(chainId)
+	if err != nil {
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, transaction)
+	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
 	}
 	return hash, nil
 }
 
-func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, svc.CredentialConfig.AccountAddress)
+func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
+	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, chainId, svc.CredentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -412,24 +444,28 @@ func (svc *lattice) CallContract(ctx context.Context, contractAddress, data, pay
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	err = transaction.SignTX(svc.ChainConfig.ChainId, svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	chainIdAsInt, err := strconv.Atoi(chainId)
+	if err != nil {
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
 
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, transaction)
+	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
 	}
 	return hash, nil
 }
 
-func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+func (svc *lattice) waitReceipt(ctx context.Context, chainId string, hash *common.Hash, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	var err error
 	var receipt *types.Receipt
 	err = retry.Do(
 		func() error {
-			receipt, err = svc.httpApi.GetReceipt(ctx, hash.String())
+			receipt, err = svc.httpApi.GetReceipt(ctx, chainId, hash.String())
 			if err != nil {
 				return err
 			}
@@ -444,34 +480,34 @@ func (svc *lattice) waitReceipt(ctx context.Context, hash *common.Hash, retryStr
 	return hash, receipt, nil
 }
 
-func (svc *lattice) TransferWaitReceipt(ctx context.Context, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.Transfer(ctx, linker, payload, amount, joule)
+func (svc *lattice) TransferWaitReceipt(ctx context.Context, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.Transfer(ctx, chainId, linker, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, retryStrategy)
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.DeployContract(ctx, data, payload, amount, joule)
+func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployContract(ctx, chainId, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, retryStrategy)
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) CallContractWaitReceipt(ctx context.Context, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.CallContract(ctx, contractAddress, data, payload, amount, joule)
+func (svc *lattice) CallContractWaitReceipt(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.CallContract(ctx, chainId, contractAddress, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return svc.waitReceipt(ctx, hash, retryStrategy)
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) PreCallContract(ctx context.Context, contractAddress, data, payload string) (*types.Receipt, error) {
+func (svc *lattice) PreCallContract(ctx context.Context, chainId, contractAddress, data, payload string) (*types.Receipt, error) {
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(
 			&types.LatestBlock{
@@ -485,7 +521,7 @@ func (svc *lattice) PreCallContract(ctx context.Context, contractAddress, data, 
 		SetPayload(payload).
 		Build()
 
-	receipt, err := svc.httpApi.PreCallContract(ctx, transaction)
+	receipt, err := svc.httpApi.PreCallContract(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
 	}

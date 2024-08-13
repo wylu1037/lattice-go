@@ -9,3 +9,7 @@ type LatestBlock struct {
 	Hash            common.Hash `json:"currentTBlockHash"`
 	DaemonBlockHash common.Hash `json:"currentDBlockHash"`
 }
+
+func (b *LatestBlock) IncrHeight() {
+	b.Height++
+}
