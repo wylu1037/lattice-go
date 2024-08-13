@@ -60,6 +60,13 @@ type KdfParams struct {
 	Salt  string `json:"salt"`  // 盐值，在密钥派生过程中加入随机性。
 }
 
+// NewFileKey 通过FileKey的JSON字符串初始化FileKey
+//
+// Parameters:
+//   - fileKeyJsonString string
+//
+// Returns:
+//   - *FileKey
 func NewFileKey(fileKeyJsonString string) *FileKey {
 	var fileKey FileKey
 	err := json.Unmarshal([]byte(fileKeyJsonString), &fileKey)
@@ -69,6 +76,16 @@ func NewFileKey(fileKeyJsonString string) *FileKey {
 	return &fileKey
 }
 
+// GenerateFileKey 生成一个FileKey
+//
+// Parameters:
+//   - privateKey string: 带0x前缀的16进制的私钥
+//   - passphrase string: 身份密码
+//   - curve types.Curve: 曲线类型，crypto.Sm2p256v1 or crypto.Secp256k1
+//
+// Returns:
+//   - *FileKey
+//   - error
 func GenerateFileKey(privateKey, passphrase string, curve types.Curve) (*FileKey, error) {
 	instance := crypto.NewCrypto(curve)
 	secretKey, err := instance.HexToSK(privateKey)
@@ -94,7 +111,17 @@ func GenerateFileKey(privateKey, passphrase string, curve types.Curve) (*FileKey
 	}, nil
 }
 
-func GenCipher(privateKey string, passphrase string, curve types.Curve) (*Cipher, error) {
+// GenCipher 生成私钥的密文
+//
+// Parameters:
+//   - privateKey string: 带0x前缀的16进制的私钥
+//   - passphrase string: 身份密码
+//   - curve types.Curve: 曲线类型，crypto.Sm2p256v1 or crypto.Secp256k1
+//
+// Returns:
+//   - *Cipher
+//   - error
+func GenCipher(privateKey, passphrase string, curve types.Curve) (*Cipher, error) {
 	// generate salt
 	salt, err := random(32)
 	if err != nil {
@@ -139,6 +166,14 @@ func GenCipher(privateKey string, passphrase string, curve types.Curve) (*Cipher
 	}, nil
 }
 
+// Decrypt 解密FileKey获取私钥
+//
+// Parameters:
+//   - passphrase string: 身份密码
+//
+// Returns:
+//   - *ecdsa.PrivateKey: 私钥
+//   - error
 func (e *FileKey) Decrypt(passphrase string) (*ecdsa.PrivateKey, error) {
 	salt, err := hex.DecodeString(e.Cipher.Kdf.KdfParams.Salt)
 	if err != nil {
@@ -207,10 +242,18 @@ func aesCtr(key, iv, secretKey []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
+// 生成指定长度的随机byte数组
+//
+// Parameters:
+//   - length int
+//
+// Returns:
+//   - []byte
+//   - error
 func random(length int) ([]byte, error) {
-	bytes := make([]byte, length)
-	if _, err := io.ReadFull(rand.Reader, bytes); err != nil {
+	bs := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
 		return nil, fmt.Errorf("reading from crypto/rand failed: %s", err.Error())
 	}
-	return bytes, nil
+	return bs, nil
 }
