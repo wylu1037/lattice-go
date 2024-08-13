@@ -9,10 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"lattice-go/common/constant"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
 	"lattice-go/lattice/block"
 	"lattice-go/lattice/client"
+	"lattice-go/wallet"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,16 +24,14 @@ const (
 	httpProtocol      = "http"
 	httpsProtocol     = "https"
 	websocketProtocol = "ws"
-	zeroAddress       = "zltc_QLbz7JHiBTspS962RLKV8GndWFwjA5K66"
-	zeroHash          = "0x0000000000000000000000000000000000000000000000000000000000000000"
 )
 
-func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options, blockCache BlockCache, accountLock AccountLock) Lattice {
+func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, credentials *Credentials, options *Options, blockCache BlockCache, accountLock AccountLock) Lattice {
 	initHttpClientArgs := &client.HttpApiInitParam{
-		Url:                connectingNodeConfig.GetHttpUrl(),
-		Transport:          options.GetTransport(),
-		JwtSecret:          connectingNodeConfig.JwtSecret,
-		ExpirationDuration: connectingNodeConfig.JwtTokenExpirationDuration,
+		Url:                        connectingNodeConfig.GetHttpUrl(),
+		Transport:                  options.GetTransport(),
+		JwtSecret:                  connectingNodeConfig.JwtSecret,
+		JwtTokenExpirationDuration: connectingNodeConfig.JwtTokenExpirationDuration,
 	}
 	httpApi := client.NewHttpApi(initHttpClientArgs)
 
@@ -41,10 +41,14 @@ func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeCo
 		blockCache.SetHttpApi(httpApi)
 	}
 
+	if accountLock == nil {
+		accountLock = NewAccountLock()
+	}
+
 	return &lattice{
 		chainConfig:          chainConfig,
 		connectingNodeConfig: connectingNodeConfig,
-		credentialConfig:     identityConfig,
+		credentials:          credentials,
 		options:              options,
 		httpApi:              httpApi,
 		blockCache:           blockCache,
@@ -56,10 +60,10 @@ type lattice struct {
 	httpApi              client.HttpApi
 	chainConfig          *ChainConfig
 	connectingNodeConfig *ConnectingNodeConfig
-	credentialConfig     *CredentialConfig
-	options              *Options
+	credentials          *Credentials
 	blockCache           BlockCache
 	accountLock          AccountLock
+	options              *Options
 }
 
 // ChainConfig 链配置
@@ -78,10 +82,11 @@ type ConnectingNodeConfig struct {
 	JwtTokenExpirationDuration time.Duration
 }
 
-// CredentialConfig 凭证配置
-type CredentialConfig struct {
+// Credentials 凭证配置
+type Credentials struct {
 	AccountAddress string // 账户地址
 	Passphrase     string // 身份密码
+	FileKey        string // FileKey 的json字符串
 	PrivateKey     string // 私钥
 }
 
@@ -122,11 +127,28 @@ func (options *Options) GetTransport() *http.Transport {
 	return options.Transport
 }
 
-func (identity *CredentialConfig) GetSK() string {
-	if identity.PrivateKey == "" {
-		// decrypt file key
+// GetSK 获取私钥的Hex字符串
+//
+// Returns:
+//   - string: 私钥的hex字符串
+//   - error
+func (credentials *Credentials) GetSK() (string, error) {
+	if credentials.PrivateKey == "" {
+		fileKey := wallet.NewFileKey(credentials.FileKey)
+		privateKey, err := fileKey.Decrypt(credentials.Passphrase)
+		if err != nil {
+			return "", err
+		}
+
+		api := crypto.NewCrypto(lo.Ternary(fileKey.IsGM, crypto.Sm2p256v1, crypto.Secp256k1))
+		sk, err := api.SKToHexString(privateKey)
+		if err != nil {
+			return "", err
+		}
+		credentials.PrivateKey = sk
+		return sk, nil
 	}
-	return identity.PrivateKey
+	return credentials.PrivateKey, nil
 }
 
 func (node *ConnectingNodeConfig) GetHttpUrl() string {
@@ -353,10 +375,10 @@ func (svc *lattice) HttpApi() client.HttpApi {
 func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起转账交易，chainId: %s, linker: %s, payload: %s, amount: %d, joule: %d", chainId, linker, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -364,7 +386,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeSend).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentialConfig.AccountAddress).
+		SetOwner(svc.credentials.AccountAddress).
 		SetLinker(linker).
 		SetPayload(payload).
 		SetAmount(amount).
@@ -376,7 +398,12 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
+	sk, err := svc.credentials.GetSK()
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -389,7 +416,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -400,10 +427,10 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起部署合约交易，chainId: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, data, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -411,8 +438,8 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeDeployContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentialConfig.AccountAddress).
-		SetLinker(zeroAddress).
+		SetOwner(svc.credentials.AccountAddress).
+		SetLinker(constant.ZeroAddress).
 		SetCode(data).
 		SetPayload(payload).
 		SetAmount(amount).
@@ -428,7 +455,12 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
+	sk, err := svc.credentials.GetSK()
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -441,7 +473,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -452,17 +484,17 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起调用合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, contractAddress, data, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentialConfig.AccountAddress).
+		SetOwner(svc.credentials.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -479,7 +511,12 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
+	sk, err := svc.credentials.GetSK()
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -492,7 +529,7 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -554,10 +591,10 @@ func (svc *lattice) PreCallContract(ctx context.Context, chainId, contractAddres
 		SetLatestBlock(
 			&types.LatestBlock{
 				Height:          0,
-				Hash:            common.HexToHash(zeroHash),
-				DaemonBlockHash: common.HexToHash(zeroHash),
+				Hash:            common.HexToHash(constant.ZeroHash),
+				DaemonBlockHash: common.HexToHash(constant.ZeroHash),
 			}).
-		SetOwner(svc.credentialConfig.AccountAddress).
+		SetOwner(constant.ZeroAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).

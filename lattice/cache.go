@@ -175,6 +175,7 @@ func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock
 		c.daemonHashExpireAtMap.LoadOrStore(chainId, daemonHashExpireAt)
 	}
 	if time.Now().After(daemonHashExpireAt.(time.Time)) {
+		log.Debug().Msgf("守护区块哈希已过期，开始更新守护区块哈希，chainId: %s, accountAddress: %s", chainId, address)
 		block, err := c.httpApi.GetLatestBlock(context.Background(), chainId, address)
 		if err != nil {
 			log.Error().Err(err).Msgf("请求节点获取最新区块信息失败，chainId: %s, accountAddress: %s", chainId, address)

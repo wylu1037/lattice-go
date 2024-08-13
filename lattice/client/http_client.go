@@ -154,17 +154,17 @@ func (j *jwtImpl) GetToken() (string, error) {
 
 // HttpApiInitParam 初始化HTTP API的参数
 type HttpApiInitParam struct {
-	Url                string          // 节点的URL
-	Transport          *http.Transport // tr
-	JwtSecret          string          // jwt的secret信息
-	ExpirationDuration time.Duration   // jwt token的过期时间
+	Url                        string          // 节点的URL
+	Transport                  *http.Transport // tr
+	JwtSecret                  string          // jwt的secret信息
+	JwtTokenExpirationDuration time.Duration   // jwt token的过期时间
 }
 
 func NewHttpApi(args *HttpApiInitParam) HttpApi {
 	return &httpApi{
 		Url:       args.Url,
 		transport: args.Transport,
-		jwtApi:    NewJwt(args.JwtSecret, args.ExpirationDuration),
+		jwtApi:    NewJwt(args.JwtSecret, args.JwtTokenExpirationDuration),
 	}
 }
 
