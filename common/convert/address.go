@@ -33,3 +33,18 @@ func ZltcToAddress(zltc string) (common.Address, error) {
 	}
 	return common.BytesToAddress(dec), nil
 }
+
+func ZltcMustToAddress(zltc string) common.Address {
+	elem := strings.SplitN(zltc, "_", 2)
+	if len(elem) != 2 {
+		return common.Address{}
+	}
+	if elem[0] != types.AddressTitle {
+		return common.Address{}
+	}
+	dec, version, err := base58.CheckDecode(elem[1])
+	if version != types.AddressVersion || err != nil {
+		return common.Address{}
+	}
+	return common.BytesToAddress(dec)
+}

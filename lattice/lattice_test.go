@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"lattice-go/abi"
+	"lattice-go/common/convert"
 	"lattice-go/common/types"
 	"lattice-go/crypto"
 	"lattice-go/lattice/builtin"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -27,12 +30,27 @@ var latticeClient = NewLattice(
 		HttpPort: 13000,
 	},
 	&CredentialConfig{
-		AccountAddress: "zltc_dS73XWcJqu2uEk4cfWsX8DDhpb9xsaH9s",
-		PrivateKey:     "0xdbd91293f324e5e49f040188720c6c9ae7e6cc2b4c5274120ee25808e8f4b6a7",
+		AccountAddress: "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi",
+		PrivateKey:     "0x23d5b2a2eb0a9c8b86d62cbc3955cfd1fb26ec576ecc379f402d0f5d2b27a7bb",
 	},
-	&Options{},
-	nil,
+	&Options{
+		MaxIdleConnsPerHost: 200,
+	},
+	NewMemoryBlockCache(10*time.Second, time.Minute, time.Minute),
+	// nil,
+	NewAccountLock(),
 )
+
+func TestLattice_Transfer(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		go func() {
+			hash, err := latticeClient.Transfer(context.Background(), chainId, "zltc_S5KXbs6gFkEpSnfNpBg3DvZHnB9aasa6Q", "0x10", 0, 0)
+			assert.NoError(t, err)
+			t.Log(hash.String())
+		}()
+	}
+	time.Sleep(10 * time.Second)
+}
 
 func TestLattice_TransferWaitReceipt(t *testing.T) {
 	hash, receipt, err := latticeClient.TransferWaitReceipt(context.Background(), chainId, "zltc_S5KXbs6gFkEpSnfNpBg3DvZHnB9aasa6Q", "0x10", 0, 0, NewBackOffRetryStrategy(10, time.Second))
@@ -70,7 +88,7 @@ func TestLattice_CallContractWaitReceipt(t *testing.T) {
 	assert.NoError(t, err)
 	data, err := function.Encode()
 	assert.NoError(t, err)
-	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, "zltc_a5jerZSQ2UNMhDbUkHaYuVbiBMxkZWETj", data, "0x", 0, 0, DefaultFixedRetryStrategy())
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, "zltc_hGCdpkifqbGs4Ryw9Q51Ue1Vc9bYL1Fr2", data, "0x", 0, 0, DefaultFixedRetryStrategy())
 	assert.NoError(t, err)
 	t.Log(hash.String())
 	r, err := json.Marshal(receipt)
@@ -79,16 +97,30 @@ func TestLattice_CallContractWaitReceipt(t *testing.T) {
 }
 
 func TestLattice_CallContract(t *testing.T) {
-	voteContract := builtin.NewVoteContract()
-	data, err := voteContract.Approve("0x101")
-	assert.NoError(t, err)
+	startTime := time.Now()
 
-	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), chainId, builtin.VoteBuiltinContract.Address, data, "0x", 0, 0, DefaultFixedRetryStrategy())
-	assert.NoError(t, err)
-	t.Log(hash.String())
-	r, err := json.Marshal(receipt)
-	assert.NoError(t, err)
-	t.Log(string(r))
+	contract := builtin.NewCredibilityContract()
+	var wg sync.WaitGroup
+	for i := 0; i < 700; i++ {
+		wg.Add(1)
+		go func(contract builtin.CredibilityContract) {
+			defer wg.Done()
+			data, err := contract.Write(&builtin.WriteLedgerRequest{
+				ProtocolUri: 8589934595,
+				Hash:        strconv.FormatInt(int64(i)+1000, 10),
+				Data:        convert.BytesToBytes32Arr([]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+				Address:     convert.ZltcMustToAddress("zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D"),
+			})
+			assert.NoError(t, err)
+			hash, err := latticeClient.CallContract(context.Background(), chainId, contract.ContractAddress(), data, "0x", 0, 0)
+			assert.NoError(t, err)
+			t.Log(hash.String())
+		}(contract)
+	}
+	wg.Wait()
+
+	elapsedTime := time.Since(startTime)
+	t.Logf("Elapsed Time: %v", elapsedTime)
 }
 
 func TestLattice_PreCallContract(t *testing.T) {
@@ -96,9 +128,10 @@ func TestLattice_PreCallContract(t *testing.T) {
 	assert.NoError(t, err)
 	data, err := function.Encode()
 	assert.NoError(t, err)
-	receipt, err := latticeClient.PreCallContract(context.Background(), chainId, "zltc_d1pTRCCH2F6McFCmXYCB743L7spuNtw31", data, "0x")
+	receipt, err := latticeClient.PreCallContract(context.Background(), chainId, "zltc_hGCdpkifqbGs4Ryw9Q51Ue1Vc9bYL1Fr2", data, "0x")
 	assert.Nil(t, err)
-	t.Log(receipt)
+	receiptBytes, _ := json.Marshal(receipt)
+	t.Log(string(receiptBytes))
 	assert.NotNil(t, receipt)
 }
 

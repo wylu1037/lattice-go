@@ -25,6 +25,12 @@ type WriteLedgerRequest struct {
 }
 
 type CredibilityContract interface {
+	// ContractAddress 获取以链建链的合约地址
+	//
+	// Returns:
+	//   - string: 合约地址，zltc_ZDfqCd4ZbBi4WA7uG4cGpFWRyTFqzyHUn
+	ContractAddress() string
+
 	// CreateBusiness 创建业务合约地址
 	//
 	// Returns:
@@ -98,6 +104,10 @@ type CredibilityContract interface {
 
 type credibilityContract struct {
 	abi abi.LatticeAbi
+}
+
+func (c *credibilityContract) ContractAddress() string {
+	return CredibilityBuiltinContract.Address
 }
 
 func (c *credibilityContract) CreateBusiness() (data string, err error) {

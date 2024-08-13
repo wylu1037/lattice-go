@@ -3,6 +3,7 @@ package lattice
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/allegro/bigcache/v3"
 	"lattice-go/common/types"
@@ -132,7 +133,10 @@ func (c *memoryBlockCache) SetBlock(chainId, address string, block *types.Latest
 		return err
 	}
 
-	c.daemonHashExpireAtMap.LoadOrStore(chainId, time.Now().Add(c.daemonHashExpirationDuration))
+	_, ok := c.daemonHashExpireAtMap.Load(chainId)
+	if !ok {
+		c.daemonHashExpireAtMap.Store(chainId, time.Now().Add(c.daemonHashExpirationDuration))
+	}
 
 	return nil
 }
@@ -152,6 +156,9 @@ func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock
 	// load cached block from memory
 	cacheBlockBytes, err := c.memoryCacheApi.Get(fmt.Sprintf("%s_%s", chainId, address))
 	if err != nil {
+		if errors.Is(err, bigcache.ErrEntryNotFound) {
+			return c.httpApi.GetLatestBlock(context.Background(), chainId, address)
+		}
 		return nil, err
 	}
 	cacheBlock := new(types.LatestBlock)
@@ -159,12 +166,12 @@ func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock
 		return nil, err
 	}
 	// judge daemon hash expiration time
-	expireAt, ok := c.daemonHashExpireAtMap.Load(chainId)
+	daemonHashExpireAt, ok := c.daemonHashExpireAtMap.Load(chainId)
 	if !ok {
-		expireAt = time.Now().Add(c.daemonHashExpirationDuration)
-		c.daemonHashExpireAtMap.LoadOrStore(chainId, expireAt)
+		daemonHashExpireAt = time.Now().Add(c.daemonHashExpirationDuration)
+		c.daemonHashExpireAtMap.LoadOrStore(chainId, daemonHashExpireAt)
 	}
-	if time.Now().After(expireAt.(time.Time)) {
+	if time.Now().After(daemonHashExpireAt.(time.Time)) {
 		block, err := c.httpApi.GetLatestBlock(context.Background(), chainId, address)
 		if err != nil {
 			return nil, err

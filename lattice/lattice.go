@@ -25,7 +25,7 @@ const (
 	zeroHash          = "0x0000000000000000000000000000000000000000000000000000000000000000"
 )
 
-func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options, blockCache BlockCache) Lattice {
+func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, identityConfig *CredentialConfig, options *Options, blockCache BlockCache, accountLock AccountLock) Lattice {
 	initHttpClientArgs := &client.HttpApiInitParam{
 		Url:                connectingNodeConfig.GetHttpUrl(),
 		Transport:          options.GetTransport(),
@@ -41,22 +41,24 @@ func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeCo
 	}
 
 	return &lattice{
-		ChainConfig:          chainConfig,
-		ConnectingNodeConfig: connectingNodeConfig,
-		CredentialConfig:     identityConfig,
-		Options:              options,
+		chainConfig:          chainConfig,
+		connectingNodeConfig: connectingNodeConfig,
+		credentialConfig:     identityConfig,
+		options:              options,
 		httpApi:              httpApi,
-		BlockCache:           blockCache,
+		blockCache:           blockCache,
+		accountLock:          accountLock,
 	}
 }
 
 type lattice struct {
 	httpApi              client.HttpApi
-	ChainConfig          *ChainConfig
-	ConnectingNodeConfig *ConnectingNodeConfig
-	CredentialConfig     *CredentialConfig
-	Options              *Options
-	BlockCache           BlockCache
+	chainConfig          *ChainConfig
+	connectingNodeConfig *ConnectingNodeConfig
+	credentialConfig     *CredentialConfig
+	options              *Options
+	blockCache           BlockCache
+	accountLock          AccountLock
 }
 
 // ChainConfig 链配置
@@ -288,7 +290,7 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	CallContract(ctx context.Context, contractAddress, chainId, data, payload string, amount, joule uint64) (*common.Hash, error)
+	CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// TransferWaitReceipt 发起转账交易并等待回执
 	//
@@ -352,14 +354,17 @@ func (svc *lattice) HttpApi() client.HttpApi {
 }
 
 func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.BlockCache.GetBlock(chainId, svc.CredentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeSend).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.CredentialConfig.AccountAddress).
+		SetOwner(svc.credentialConfig.AccountAddress).
 		SetLinker(linker).
 		SetPayload(payload).
 		SetAmount(amount).
@@ -370,7 +375,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 	if err != nil {
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +386,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.BlockCache.SetBlock(chainId, svc.CredentialConfig.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
 			fmt.Println(err)
 		}
 	}
@@ -389,14 +394,17 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 }
 
 func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, chainId, svc.CredentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeDeployContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.CredentialConfig.AccountAddress).
+		SetOwner(svc.credentialConfig.AccountAddress).
 		SetLinker(zeroAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -404,7 +412,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 		SetJoule(joule).
 		Build()
 
-	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
@@ -412,7 +420,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 	if err != nil {
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -420,19 +428,29 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
+	} else {
+		latestBlock.Hash = *hash
+		latestBlock.IncrHeight()
+		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
+			fmt.Println(err)
+		}
 	}
+
 	return hash, nil
 }
 
 func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
-	latestBlock, err := svc.httpApi.GetLatestBlock(ctx, chainId, svc.CredentialConfig.AccountAddress)
+	svc.accountLock.Obtain(chainId, svc.credentialConfig.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, svc.credentialConfig.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentialConfig.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.CredentialConfig.AccountAddress).
+		SetOwner(svc.credentialConfig.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -440,7 +458,7 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 		SetJoule(joule).
 		Build()
 
-	cryptoInstance := crypto.NewCrypto(svc.ChainConfig.Curve)
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
@@ -448,7 +466,7 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 	if err != nil {
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.ChainConfig.GetCurve(), svc.CredentialConfig.GetSK())
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), svc.credentialConfig.GetSK())
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +474,14 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
 	if err != nil {
 		return nil, err
+	} else {
+		latestBlock.Hash = *hash
+		latestBlock.IncrHeight()
+		if err := svc.blockCache.SetBlock(chainId, svc.credentialConfig.AccountAddress, latestBlock); err != nil {
+			fmt.Println(err)
+		}
 	}
+
 	return hash, nil
 }
 
@@ -515,7 +540,7 @@ func (svc *lattice) PreCallContract(ctx context.Context, chainId, contractAddres
 				Hash:            common.HexToHash(zeroHash),
 				DaemonBlockHash: common.HexToHash(zeroHash),
 			}).
-		SetOwner(svc.CredentialConfig.AccountAddress).
+		SetOwner(svc.credentialConfig.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
