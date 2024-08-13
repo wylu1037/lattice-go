@@ -44,6 +44,11 @@ type latticeFunction struct {
 	method     *abi.Method
 }
 
+// Encode abi encode
+//
+// Returns:
+//   - string: 带0x前缀的16进制字符串
+//   - error
 func (f *latticeFunction) Encode() (string, error) {
 	var err error
 	convertedArgs, err := f.ConvertArguments(f.method.Inputs, f.args)

@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"lattice-go/abi"
 	"lattice-go/common/convert"
@@ -15,11 +16,12 @@ func NewCredibilityContract() CredibilityContract {
 	}
 }
 
+// WriteLedgerRequest 存证数据的请求结构体
 type WriteLedgerRequest struct {
-	Uri                     uint64 `json:"protocolUri"`
-	DataId                  string `json:"hash"`
-	Data                    []byte `json:"data"`
-	BusinessContractAddress string `json:"address"`
+	ProtocolUri uint64         `json:"protocolUri"` // uri:协议号
+	Hash        string         `json:"hash"`        // dataId:数据ID
+	Data        [][32]byte     `json:"data"`        // data:存证的数据
+	Address     common.Address `json:"address"`     // businessContractAddress:业务合约地址
 }
 
 type CredibilityContract interface {
@@ -65,12 +67,22 @@ type CredibilityContract interface {
 	// Write 写入存证数据
 	//
 	// Parameters:
-	//   - request WriteLedgerRequest
+	//   - request *WriteLedgerRequest
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	Write(request WriteLedgerRequest) (data string, err error)
+	Write(request *WriteLedgerRequest) (data string, err error)
+
+	// BatchWrite 批量写入存证数据
+	//
+	// Parameters:
+	//   - request []*WriteLedgerRequest
+	//
+	// Returns:
+	//   - data string
+	//   - err error
+	BatchWrite(request []WriteLedgerRequest) (data string, err error)
 
 	// Read 读取存证数据
 	//
@@ -119,13 +131,22 @@ func (c *credibilityContract) UpdateProtocol(uri int64, message []byte) (data st
 	return fn.Encode()
 }
 
-func (c *credibilityContract) Write(request WriteLedgerRequest) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("writeTraceability", request.Uri, request.DataId, convert.BytesToBytes32Arr(request.Data), request.BusinessContractAddress)
+func (c *credibilityContract) Write(request *WriteLedgerRequest) (data string, err error) {
+	code, err := c.abi.MyAbi().Pack("writeTraceability", request.ProtocolUri, request.Hash, request.Data, request.Address)
 	if err != nil {
 		return "", err
 	}
 
-	return fn.Encode()
+	return hexutil.Encode(code), nil
+}
+
+func (c *credibilityContract) BatchWrite(request []WriteLedgerRequest) (data string, err error) {
+	code, err := c.abi.MyAbi().Pack("writeTraceabilityBatch", request)
+	if err != nil {
+		return "", err
+	}
+
+	return hexutil.Encode(code), nil
 }
 
 func (c *credibilityContract) Read(dataId, businessContractAddress string) (data string, err error) {

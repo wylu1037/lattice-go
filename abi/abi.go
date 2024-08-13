@@ -15,6 +15,7 @@ func NewAbi(abiString string) LatticeAbi {
 }
 
 type LatticeAbi interface {
+	MyAbi() *abi.ABI
 	Function(method string) (*abi.Method, error)
 	GetLatticeFunction(methodName string, args ...interface{}) (LatticeFunction, error)
 }
@@ -32,6 +33,10 @@ func FromJson(abiString string) *abi.ABI {
 		return nil
 	}
 	return &myAbi
+}
+
+func (i *latticeAbi) MyAbi() *abi.ABI {
+	return i.abi
 }
 
 func (i *latticeAbi) Function(methodName string) (*abi.Method, error) {
