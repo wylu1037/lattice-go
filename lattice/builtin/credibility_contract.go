@@ -23,7 +23,13 @@ type WriteLedgerRequest struct {
 }
 
 type CredibilityContract interface {
+	// CreateBusiness 创建业务合约地址
+	//
+	// Returns:
+	//   - data string
+	//   - err error
 	CreateBusiness() (data string, err error)
+
 	// CreateProtocol 创建协议
 	//
 	// Parameters:
@@ -34,9 +40,47 @@ type CredibilityContract interface {
 	//   - data string
 	//   - err error
 	CreateProtocol(tradeNumber uint64, message []byte) (data string, err error)
+
+	// ReadProtocol 读取协议
+	//
+	// Parameters:
+	//   - uri uint64
+	//
+	// Returns:
+	//   - data string
+	//   - err error
 	ReadProtocol(uri uint64) (data string, err error)
+
+	// UpdateProtocol 更新协议
+	//
+	// Parameters:
+	//   - uri int64
+	//   - message []byte
+	//
+	// Returns:
+	//   - data string
+	//   - err error
 	UpdateProtocol(uri int64, message []byte) (data string, err error)
+
+	// Write 写入存证数据
+	//
+	// Parameters:
+	//   - request WriteLedgerRequest
+	//
+	// Returns:
+	//   - data string
+	//   - err error
 	Write(request WriteLedgerRequest) (data string, err error)
+
+	// Read 读取存证数据
+	//
+	// Parameters:
+	//   - dataId string
+	//   - businessContractAddress string
+	//
+	// Returns:
+	//   - data string
+	//   - err error
 	Read(dataId, businessContractAddress string) (data string, err error)
 }
 

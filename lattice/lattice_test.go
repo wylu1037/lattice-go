@@ -3,6 +3,7 @@ package lattice
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"lattice-go/abi"
 	"lattice-go/common/types"
@@ -98,4 +99,18 @@ func TestLattice_PreCallContract(t *testing.T) {
 	assert.Nil(t, err)
 	t.Log(receipt)
 	assert.NotNil(t, receipt)
+}
+
+func TestNewLattice(t *testing.T) {
+	// 创建协议
+	credibilityContract := builtin.NewCredibilityContract()
+	data, err := credibilityContract.CreateProtocol(2, []byte("123456"))
+	fmt.Println(data)
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), builtin.CredibilityBuiltinContract.Address, data, "0x", 0, 0, DefaultFixedRetryStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	t.Log(string(r))
 }
