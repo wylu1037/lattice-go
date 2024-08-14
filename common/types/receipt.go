@@ -15,12 +15,12 @@ type Receipt struct {
 }
 
 type Event struct {
-	Address      common.Address `json:"address"`
-	Topics       []common.Hash  `json:"topics"`
-	Data         []byte         `json:"data"`
-	Index        uint           `json:"logIndex"`
-	TBlockHash   common.Hash    `json:"tblockHash"`
-	DBlockNumber uint64         `json:"dblockNumber"`
-	Removed      bool           `json:"removed"`
-	DataHex      string         `json:"dataHex"`
+	Address      string        `json:"address"`
+	Topics       []common.Hash `json:"topics"`
+	Data         []byte        `json:"data"`
+	Index        uint          `json:"logIndex"`
+	TBlockHash   common.Hash   `json:"tblockHash"`
+	DBlockNumber uint64        `json:"dblockNumber"`
+	Removed      bool          `json:"removed"`
+	DataHex      string        `json:"dataHex"`
 }

@@ -600,6 +600,8 @@ func (svc *lattice) CallContractWaitReceipt(ctx context.Context, credentials *Cr
 }
 
 func (svc *lattice) PreCallContract(ctx context.Context, chainId, owner, contractAddress, data, payload string) (*types.Receipt, error) {
+	log.Debug().Msgf("开始发起预调用合约交易，chainId: %s, owner: %s, contractAddress: %s, data: %s, payload: %s", chainId, owner, contractAddress, data, payload)
+
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(
 			&types.LatestBlock{
@@ -617,5 +619,6 @@ func (svc *lattice) PreCallContract(ctx context.Context, chainId, owner, contrac
 	if err != nil {
 		return nil, err
 	}
+	log.Debug().Msgf("结束预调用合约，回执为：%+v", receipt)
 	return receipt, nil
 }
