@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"strings"
 )
 
@@ -57,4 +58,37 @@ func (i *latticeAbi) GetLatticeFunction(methodName string, args ...interface{}) 
 		return nil, err
 	}
 	return NewLatticeFunction(i.abiString, i.abi, methodName, args, method), nil
+}
+
+// DecodeReturn 解码合约调用结果
+//
+// Parameters:
+//   - myabi *abi.ABI
+//   - functionName string: 方法名
+//   - contractReturn string: 合约调用结果
+//
+// Returns:
+//   - string: abi解码后的合约调用结果
+//   - error
+func DecodeReturn(myabi *abi.ABI, functionName, contractReturn string) (string, error) {
+	method, ok := myabi.Methods[functionName]
+	if !ok {
+		return "", fmt.Errorf("合约方法【%s】不存在", functionName)
+	}
+
+	bytes, err := hexutil.Decode(contractReturn)
+	if err != nil {
+		return "", err
+	}
+	res, err := method.Outputs.UnpackValues(bytes)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := json.Marshal(res[0])
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
