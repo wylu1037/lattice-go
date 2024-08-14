@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"lattice-go/crypto"
+	"github.com/wylu1037/lattice-go/crypto"
 	"testing"
 )
 

@@ -3,8 +3,8 @@ package builtin
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"lattice-go/abi"
-	"lattice-go/common/convert"
+	"github.com/wylu1037/lattice-go/abi"
+	"github.com/wylu1037/lattice-go/common/convert"
 )
 
 // CreateBusinessContractAddress 创建存证业务的业务合约地址

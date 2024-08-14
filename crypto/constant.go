@@ -1,6 +1,6 @@
 package crypto
 
-import "lattice-go/common/types"
+import "github.com/wylu1037/lattice-go/common/types"
 
 const (
 	Secp256k1 types.Curve = "secp256k1"

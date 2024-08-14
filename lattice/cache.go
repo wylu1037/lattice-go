@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/allegro/bigcache/v3"
 	"github.com/rs/zerolog/log"
-	"lattice-go/common/types"
-	"lattice-go/lattice/client"
+	"github.com/wylu1037/lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/lattice/client"
 	"sync"
 	"time"
 )

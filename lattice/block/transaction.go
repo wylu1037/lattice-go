@@ -4,10 +4,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/wylu1037/lattice-go/common/convert"
+	"github.com/wylu1037/lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/crypto"
 	"io"
-	"lattice-go/common/convert"
-	"lattice-go/common/types"
-	"lattice-go/crypto"
 	"math/big"
 )
 

@@ -4,10 +4,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/wylu1037/lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/crypto/secp256k1"
+	"github.com/wylu1037/lattice-go/crypto/sm2p256v1"
 	"io"
-	"lattice-go/common/types"
-	"lattice-go/crypto/secp256k1"
-	"lattice-go/crypto/sm2p256v1"
 )
 
 var instance CryptographyApi

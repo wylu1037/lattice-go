@@ -1,7 +1,7 @@
 package builtin
 
 import (
-	"lattice-go/abi"
+	"github.com/wylu1037/lattice-go/abi"
 )
 
 func NewVoteContract() VoteContract {

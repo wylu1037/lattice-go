@@ -2,7 +2,7 @@ package builtin
 
 import (
 	"github.com/stretchr/testify/assert"
-	"lattice-go/common/convert"
+	"github.com/wylu1037/lattice-go/common/convert"
 	"testing"
 )
 

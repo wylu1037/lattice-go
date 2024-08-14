@@ -11,11 +11,11 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/google/uuid"
+	"github.com/wylu1037/lattice-go/common/convert"
+	"github.com/wylu1037/lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/crypto"
 	"golang.org/x/crypto/scrypt"
 	"io"
-	"lattice-go/common/convert"
-	"lattice-go/common/types"
-	"lattice-go/crypto"
 	"strings"
 )
 

@@ -11,9 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tjfoc/gmsm/sm2"
 	"github.com/tjfoc/gmsm/sm3"
+	"github.com/wylu1037/lattice-go/common/constant"
+	"github.com/wylu1037/lattice-go/common/convert"
 	"io"
-	"lattice-go/common/constant"
-	"lattice-go/common/convert"
 	"math/big"
 )
 

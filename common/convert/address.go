@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/ethereum/go-ethereum/common"
-	"lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/common/types"
 	"strings"
 )
 
