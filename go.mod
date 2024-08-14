@@ -7,12 +7,12 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/defiweb/go-eth v0.6.1
-	github.com/ethereum/go-ethereum v1.14.5
+	github.com/ethereum/go-ethereum v1.14.6
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
 	github.com/rs/zerolog v1.33.0
 	github.com/samber/lo v1.44.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/tyler-smith/go-bip32 v1.0.0
 	github.com/tyler-smith/go-bip39 v1.1.0
