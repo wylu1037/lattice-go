@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	abi2 "github.com/defiweb/go-eth/abi"
+	//abi2 "github.com/defiweb/go-eth/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -58,7 +58,7 @@ func (f *latticeFunction) Encode() (string, error) {
 
 	var data []byte
 	if f.inputsContainsTuple() {
-		contract, err := abi2.ParseJSON([]byte(f.abiString))
+		/*contract, err := abi2.ParseJSON([]byte(f.abiString))
 		if err != nil {
 			return "", err
 		}
@@ -68,7 +68,8 @@ func (f *latticeFunction) Encode() (string, error) {
 		}
 		if data, err = m.EncodeArgs(convertedArgs...); err != nil {
 			return "", err
-		}
+		}*/
+		return "", errors.New("tuple is not supported")
 	} else {
 		if data, err = f.abi.Pack(f.methodName, convertedArgs...); err != nil {
 			return "", err
