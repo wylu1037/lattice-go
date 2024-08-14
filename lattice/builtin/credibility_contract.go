@@ -76,13 +76,13 @@ type CredibilityContract interface {
 	// UpdateProtocol 更新协议
 	//
 	// Parameters:
-	//   - uri int64
+	//   - uri uint64
 	//   - message []byte
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	UpdateProtocol(uri int64, message []byte) (data string, err error)
+	UpdateProtocol(uri uint64, message []byte) (data string, err error)
 
 	// Write 写入存证数据
 	//
@@ -154,7 +154,7 @@ func (c *credibilityContract) ReadProtocol(uri uint64) (data string, err error) 
 	return fn.Encode()
 }
 
-func (c *credibilityContract) UpdateProtocol(uri int64, message []byte) (data string, err error) {
+func (c *credibilityContract) UpdateProtocol(uri uint64, message []byte) (data string, err error) {
 	fn, err := c.abi.GetLatticeFunction("updateProtocol", uri, convert.BytesToBytes32Arr(message))
 	if err != nil {
 		return "", err
