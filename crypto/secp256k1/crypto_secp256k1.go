@@ -3,12 +3,13 @@ package secp256k1
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	//"github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
 	"math/big"
 )
@@ -26,13 +27,12 @@ type NistApi struct {
 }
 
 func (i *NistApi) GenerateKeyPair() (*ecdsa.PrivateKey, error) {
-	/*sk, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	sk, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
 
-	return sk, nil*/
-	return nil, nil
+	return sk, nil
 }
 
 func (i *NistApi) SKToBytes(sk *ecdsa.PrivateKey) ([]byte, error) {
@@ -129,11 +129,7 @@ func (i *NistApi) Sign(hash []byte, sk *ecdsa.PrivateKey) (signature []byte, err
 		return nil, err
 	}
 
-	fmt.Println(skBytes)
-
-	// return secp256k1.Sign(hash, skBytes)
-
-	return nil, nil
+	return secp256k1.Sign(hash, skBytes)
 }
 
 // SignatureToPK 从签名恢复公钥
@@ -141,12 +137,11 @@ func (i *NistApi) SignatureToPK(hash, signature []byte) (*ecdsa.PublicKey, error
 	if len(signature) == 97 {
 		signature = signature[:65]
 	}
-	/*pkBytes, err := secp256k1.RecoverPubkey(hash, signature)
+	pkBytes, err := secp256k1.RecoverPubkey(hash, signature)
 	if err != nil {
 		return nil, err
 	}
-	return i.BytesToPK(pkBytes)*/
-	return nil, nil
+	return i.BytesToPK(pkBytes)
 }
 
 // Verify 验证签名
@@ -158,22 +153,17 @@ func (i *NistApi) Verify(hash []byte, signature []byte, pk *ecdsa.PublicKey) boo
 	if len(signature) == 65 {
 		signature = signature[:64]
 	}
-	fmt.Println(pkBytes)
-	//return secp256k1.VerifySignature(pkBytes, hash, signature)
-	return false
+	return secp256k1.VerifySignature(pkBytes, hash, signature)
 }
 
 // CompressPK 压缩公钥
 func (i *NistApi) CompressPK(pk *ecdsa.PublicKey) []byte {
-	//return secp256k1.CompressPubkey(pk.X, pk.Y)
-	return nil
+	return secp256k1.CompressPubkey(pk.X, pk.Y)
 }
 
 // DecompressPK 解压缩公钥
 func (i *NistApi) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
-	// x, y := secp256k1.DecompressPubkey(pk)
-	x := big.NewInt(0)
-	y := big.NewInt(0)
+	x, y := secp256k1.DecompressPubkey(pk)
 	if x == nil {
 		return nil, errors.New("invalid public key")
 	}
@@ -186,8 +176,7 @@ func (i *NistApi) DecompressPK(pk []byte) (*ecdsa.PublicKey, error) {
 
 // GetCurve 获取椭圆曲线
 func (i *NistApi) GetCurve() elliptic.Curve {
-	//return secp256k1.S256()
-	return i.GetCurve()
+	return secp256k1.S256()
 }
 
 func (i *NistApi) EncodeHash(encodeFunc func(io.Writer)) (h common.Hash) {
