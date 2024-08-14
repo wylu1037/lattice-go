@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	myabi "github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/wylu1037/lattice-go/abi"
@@ -25,6 +26,13 @@ type WriteLedgerRequest struct {
 }
 
 type CredibilityContract interface {
+
+	// MyAbi 返回存证合约的ABI对象
+	//
+	// Returns:
+	//   - *myabi.ABI
+	MyAbi() *myabi.ABI
+
 	// ContractAddress 获取以链建链的合约地址
 	//
 	// Returns:
@@ -110,6 +118,10 @@ type CredibilityContract interface {
 
 type credibilityContract struct {
 	abi abi.LatticeAbi
+}
+
+func (c *credibilityContract) MyAbi() *myabi.ABI {
+	return c.abi.MyAbi()
 }
 
 func (c *credibilityContract) ContractAddress() string {
