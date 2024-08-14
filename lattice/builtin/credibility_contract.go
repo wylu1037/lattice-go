@@ -28,8 +28,14 @@ type CredibilityContract interface {
 	// ContractAddress 获取以链建链的合约地址
 	//
 	// Returns:
-	//   - string: 合约地址，zltc_ZDfqCd4ZbBi4WA7uG4cGpFWRyTFqzyHUn
+	//   - string: 合约地址，zltc_QLbz7JHiBTspUvTPzLHy5biDS9mu53mmv
 	ContractAddress() string
+
+	// GetCreateBusinessContractAddress 获取创建业务合约的合约地址
+	//
+	// Returns:
+	//   - string: 创建业务合约的合约地址，zltc_QLbz7JHiBTspS9WTWJUrbNsB5wbENMweQ
+	GetCreateBusinessContractAddress() string
 
 	// CreateBusiness 创建业务合约地址
 	//
@@ -108,6 +114,10 @@ type credibilityContract struct {
 
 func (c *credibilityContract) ContractAddress() string {
 	return CredibilityBuiltinContract.Address
+}
+
+func (c *credibilityContract) GetCreateBusinessContractAddress() string {
+	return CreateBusinessContractAddress
 }
 
 func (c *credibilityContract) CreateBusiness() (data string, err error) {

@@ -26,7 +26,7 @@ const (
 	websocketProtocol = "ws"
 )
 
-func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, credentials *Credentials, options *Options, blockCache BlockCache, accountLock AccountLock) Lattice {
+func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, blockCache BlockCache, accountLock AccountLock, options *Options) Lattice {
 	initHttpClientArgs := &client.HttpApiInitParam{
 		Url:                        connectingNodeConfig.GetHttpUrl(),
 		Transport:                  options.GetTransport(),
@@ -48,7 +48,6 @@ func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeCo
 	return &lattice{
 		chainConfig:          chainConfig,
 		connectingNodeConfig: connectingNodeConfig,
-		credentials:          credentials,
 		options:              options,
 		httpApi:              httpApi,
 		blockCache:           blockCache,
@@ -60,10 +59,10 @@ type lattice struct {
 	httpApi              client.HttpApi
 	chainConfig          *ChainConfig
 	connectingNodeConfig *ConnectingNodeConfig
-	credentials          *Credentials
-	blockCache           BlockCache
-	accountLock          AccountLock
-	options              *Options
+	// credentials          *Credentials
+	blockCache  BlockCache
+	accountLock AccountLock
+	options     *Options
 }
 
 // ChainConfig 链配置
@@ -278,30 +277,36 @@ type Lattice interface {
 	//
 	// Parameters:
 	//    - ctx context.Context
+	//    - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//    - linker string: 转账接收者账户地址
 	//    - payload string: 交易备注
 	//
 	// Returns:
 	//    - *common.Hash: 交易哈希
 	//    - error
-	Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error)
+	Transfer(ctx context.Context, credentials *Credentials, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// DeployContract 发起部署合约交易
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//   - data string: 合约数据
 	//   - payload string: 交易备注
 	//
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error)
+	DeployContract(ctx context.Context, credentials *Credentials, chainId, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// CallContract 发起调用合约交易
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//   - contractAddress string: 合约地址
 	//   - data string: 调用的合约数据
 	//   - payload string: 交易备注
@@ -309,12 +314,14 @@ type Lattice interface {
 	// Returns:
 	//   - *common.Hash: 交易哈希
 	//   - error
-	CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
+	CallContract(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
 
 	// TransferWaitReceipt 发起转账交易并等待回执
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//   - linker string
 	//   - payload string: 交易备注
 	//   - retryStrategy *RetryStrategy: 等待回执策略
@@ -323,12 +330,14 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	TransferWaitReceipt(ctx context.Context, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	TransferWaitReceipt(ctx context.Context, credentials *Credentials, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// DeployContractWaitReceipt 发起部署合约交易并等待回执
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//   - data string
 	//   - payload string: 交易备注
 	//   - retryStrategy *RetryStrategy: 等待回执策略
@@ -337,12 +346,14 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	DeployContractWaitReceipt(ctx context.Context, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	DeployContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// CallContractWaitReceipt 发起调用合约交易并等待回执
 	//
 	// Parameters:
 	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string
 	//   - contractAddress string
 	//   - data string
 	//   - payload string: 交易备注
@@ -352,12 +363,14 @@ type Lattice interface {
 	//   - *common.Hash: 交易哈希
 	//   - *types.Receipt: 回执
 	//   - error
-	CallContractWaitReceipt(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+	CallContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 
 	// PreCallContract 预执行合约，预执行的交易不会上链
 	//
 	// Parameters:
 	//   - ctx context.Context:
+	//   - chainId string
+	//   - owner string: 调用者账户地址
 	//   - contractAddress string: 合约地址
 	//   - data string: 执行的合约代码
 	//   - payload string: 交易备注
@@ -365,20 +378,20 @@ type Lattice interface {
 	// Returns:
 	//   - *types.Receipt: 交易回执
 	//   - error: 预执行的错误
-	PreCallContract(ctx context.Context, chainId, contractAddress, data, payload string) (*types.Receipt, error)
+	PreCallContract(ctx context.Context, chainId, owner, contractAddress, data, payload string) (*types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
 	return svc.httpApi
 }
 
-func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
+func (svc *lattice) Transfer(ctx context.Context, credentials *Credentials, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起转账交易，chainId: %s, linker: %s, payload: %s, amount: %d, joule: %d", chainId, linker, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -386,7 +399,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeSend).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentials.AccountAddress).
+		SetOwner(credentials.AccountAddress).
 		SetLinker(linker).
 		SetPayload(payload).
 		SetAmount(amount).
@@ -398,7 +411,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 		log.Error().Err(err)
 		return nil, err
 	}
-	sk, err := svc.credentials.GetSK()
+	sk, err := credentials.GetSK()
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -416,7 +429,7 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -424,13 +437,13 @@ func (svc *lattice) Transfer(ctx context.Context, chainId, linker, payload strin
 	return hash, nil
 }
 
-func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
+func (svc *lattice) DeployContract(ctx context.Context, credentials *Credentials, chainId, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起部署合约交易，chainId: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, data, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -438,7 +451,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeDeployContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentials.AccountAddress).
+		SetOwner(credentials.AccountAddress).
 		SetLinker(constant.ZeroAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -455,7 +468,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 		log.Error().Err(err)
 		return nil, err
 	}
-	sk, err := svc.credentials.GetSK()
+	sk, err := credentials.GetSK()
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -473,7 +486,7 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -481,20 +494,20 @@ func (svc *lattice) DeployContract(ctx context.Context, chainId, data, payload s
 	return hash, nil
 }
 
-func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
+func (svc *lattice) CallContract(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
 	log.Debug().Msgf("开始发起调用合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, contractAddress, data, payload, amount, joule)
 
-	svc.accountLock.Obtain(chainId, svc.credentials.AccountAddress)
-	defer svc.accountLock.Unlock(chainId, svc.credentials.AccountAddress)
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
 
-	latestBlock, err := svc.blockCache.GetBlock(chainId, svc.credentials.AccountAddress)
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(latestBlock).
-		SetOwner(svc.credentials.AccountAddress).
+		SetOwner(credentials.AccountAddress).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
@@ -511,7 +524,7 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 		log.Error().Err(err)
 		return nil, err
 	}
-	sk, err := svc.credentials.GetSK()
+	sk, err := credentials.GetSK()
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -529,7 +542,7 @@ func (svc *lattice) CallContract(ctx context.Context, chainId, contractAddress, 
 	} else {
 		latestBlock.Hash = *hash
 		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, svc.credentials.AccountAddress, latestBlock); err != nil {
+		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
 			log.Error().Err(err)
 		}
 	}
@@ -559,8 +572,8 @@ func (svc *lattice) waitReceipt(ctx context.Context, chainId string, hash *commo
 	return hash, receipt, nil
 }
 
-func (svc *lattice) TransferWaitReceipt(ctx context.Context, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.Transfer(ctx, chainId, linker, payload, amount, joule)
+func (svc *lattice) TransferWaitReceipt(ctx context.Context, credentials *Credentials, chainId, linker, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.Transfer(ctx, credentials, chainId, linker, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -568,8 +581,8 @@ func (svc *lattice) TransferWaitReceipt(ctx context.Context, chainId, linker, pa
 	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.DeployContract(ctx, chainId, data, payload, amount, joule)
+func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployContract(ctx, credentials, chainId, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -577,8 +590,8 @@ func (svc *lattice) DeployContractWaitReceipt(ctx context.Context, chainId, data
 	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) CallContractWaitReceipt(ctx context.Context, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
-	hash, err := svc.CallContract(ctx, chainId, contractAddress, data, payload, amount, joule)
+func (svc *lattice) CallContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.CallContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -586,7 +599,7 @@ func (svc *lattice) CallContractWaitReceipt(ctx context.Context, chainId, contra
 	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
 
-func (svc *lattice) PreCallContract(ctx context.Context, chainId, contractAddress, data, payload string) (*types.Receipt, error) {
+func (svc *lattice) PreCallContract(ctx context.Context, chainId, owner, contractAddress, data, payload string) (*types.Receipt, error) {
 	transaction := block.NewTransactionBuilder(block.TransactionTypeCallContract).
 		SetLatestBlock(
 			&types.LatestBlock{
@@ -594,7 +607,7 @@ func (svc *lattice) PreCallContract(ctx context.Context, chainId, contractAddres
 				Hash:            common.HexToHash(constant.ZeroHash),
 				DaemonBlockHash: common.HexToHash(constant.ZeroHash),
 			}).
-		SetOwner(constant.ZeroAddress).
+		SetOwner(owner).
 		SetLinker(contractAddress).
 		SetCode(data).
 		SetPayload(payload).
