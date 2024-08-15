@@ -58,6 +58,7 @@ func NewJwt(secret string, expirationDuration time.Duration) Jwt {
 		Secret:             secret,
 		Algorithm:          jwt.SigningMethodHS256,
 		ExpirationDuration: expirationDuration,
+		TokenCache:         new(JwtTokenCache),
 	}
 }
 
@@ -237,10 +238,15 @@ type httpApi struct {
 }
 
 func (api *httpApi) newHeaders(chainId string) map[string]string {
-	return map[string]string{
+	headers := map[string]string{
 		"Content-Type": "application/json",
 		"ChainId":      chainId,
 	}
+	if api.jwtApi != nil {
+		token, _ := api.jwtApi.GetToken()
+		headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
+	}
+	return headers
 }
 
 func (api *httpApi) GetLatestBlock(_ context.Context, chainId, accountAddress string) (*types.LatestBlock, error) {
