@@ -26,7 +26,25 @@ const (
 	websocketProtocol = "ws"
 )
 
+// NewLattice 初始化LatticeApi
+//
+// Parameters:
+//   - chainConfig *ChainConfig: 链配置信息
+//   - connectingNodeConfig *ConnectingNodeConfig: 节点的连接信息
+//   - blockCache BlockCache: 区块缓存接口，通过缓存支持账户高并发发交易，为nil时，禁用缓存，或着使用内置的 lattice.NewMemoryBlockCache(10*time.Second, time.Minute, time.Minute)
+//   - accountLock AccountLock: 账户锁接口，通过账户锁支持账户高并发发交易，为nil时，默认使用 lattice.NewAccountLock()
+//   - options *Options:
+//
+// Returns:
+//   - Lattice
 func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeConfig, blockCache BlockCache, accountLock AccountLock, options *Options) Lattice {
+	if err := chainConfig.validate(); err != nil {
+		panic(err)
+	}
+	if err := connectingNodeConfig.validate(); err != nil {
+		panic(err)
+	}
+
 	initHttpClientArgs := &client.HttpApiInitParam{
 		Url:                        connectingNodeConfig.GetHttpUrl(),
 		Transport:                  options.GetTransport(),
@@ -56,19 +74,26 @@ func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeCo
 }
 
 type lattice struct {
-	httpApi              client.HttpApi
-	chainConfig          *ChainConfig
-	connectingNodeConfig *ConnectingNodeConfig
-	// credentials          *Credentials
-	blockCache  BlockCache
-	accountLock AccountLock
-	options     *Options
+	httpApi              client.HttpApi        // 节点的http客户端
+	chainConfig          *ChainConfig          // 链信息配置
+	connectingNodeConfig *ConnectingNodeConfig // 节点的连接信息配置
+	blockCache           BlockCache            // 区块缓存接口
+	accountLock          AccountLock           // 账户锁接口
+	options              *Options              // 可选配置
 }
 
 // ChainConfig 链配置
 type ChainConfig struct {
 	Curve     types.Curve // crypto.Secp256k1 or crypto.Sm2p256v1
 	TokenLess bool        // false:有通证链，true:无通证链
+}
+
+// 验证链配置信息是否有效
+func (chain *ChainConfig) validate() error {
+	if chain.Curve == "" {
+		return fmt.Errorf("ChainConfig未指定Curve参数")
+	}
+	return nil
 }
 
 // ConnectingNodeConfig 节点配置
@@ -81,6 +106,17 @@ type ConnectingNodeConfig struct {
 	JwtTokenExpirationDuration time.Duration
 }
 
+// 验证节点的连接信息是否有效
+func (node *ConnectingNodeConfig) validate() error {
+	if node.Ip == "" {
+		return fmt.Errorf("节点的IP信息不能为空")
+	}
+	if node.HttpPort == 0 {
+		return fmt.Errorf("节点的HttpPort信息不能为空")
+	}
+	return nil
+}
+
 // Credentials 凭证配置
 type Credentials struct {
 	AccountAddress string // 账户地址
@@ -90,9 +126,9 @@ type Credentials struct {
 }
 
 type Options struct {
-	Transport *http.Transport
+	Transport *http.Transport // http连接的transport配置
 
-	InsecureSkipVerify bool
+	InsecureSkipVerify bool // 是否跳过https安全验证
 
 	// MaxIdleConns controls the maximum number of idle (keep-alive)
 	// connections across all hosts. Zero means no limit.
@@ -102,17 +138,6 @@ type Options struct {
 	// (keep-alive) connections to keep per-host.
 	// If zero, DefaultMaxIdleConnsPerHost(2) is used.
 	MaxIdleConnsPerHost int
-}
-
-func (chain *ChainConfig) GetCurve() types.Curve {
-	switch chain.Curve {
-	case crypto.Sm2p256v1:
-		return crypto.Sm2p256v1
-	case crypto.Secp256k1:
-		return crypto.Secp256k1
-	default:
-		return crypto.Sm2p256v1
-	}
 }
 
 func (options *Options) GetTransport() *http.Transport {
@@ -416,7 +441,7 @@ func (svc *lattice) Transfer(ctx context.Context, credentials *Credentials, chai
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -473,7 +498,7 @@ func (svc *lattice) DeployContract(ctx context.Context, credentials *Credentials
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
@@ -529,7 +554,7 @@ func (svc *lattice) CallContract(ctx context.Context, credentials *Credentials, 
 		log.Error().Err(err)
 		return nil, err
 	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.GetCurve(), sk)
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
 	if err != nil {
 		log.Error().Err(err)
 		return nil, err
