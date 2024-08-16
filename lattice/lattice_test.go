@@ -23,7 +23,7 @@ const (
 
 var latticeClient = NewLattice(
 	&ChainConfig{Curve: crypto.Sm2p256v1},
-	&ConnectingNodeConfig{Ip: "192.168.1.185", HttpPort: 13000},
+	&ConnectingNodeConfig{Ip: "192.168.1.185", HttpPort: 13000, GinHttpPort: 15002},
 	NewMemoryBlockCache(10*time.Second, time.Minute, time.Minute),
 	NewAccountLock(),
 	&Options{MaxIdleConnsPerHost: 200},

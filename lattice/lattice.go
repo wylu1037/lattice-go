@@ -46,7 +46,8 @@ func NewLattice(chainConfig *ChainConfig, connectingNodeConfig *ConnectingNodeCo
 	}
 
 	initHttpClientArgs := &client.HttpApiInitParam{
-		Url:                        connectingNodeConfig.GetHttpUrl(),
+		HttpUrl:                    connectingNodeConfig.GetHttpUrl(),
+		GinServerUrl:               connectingNodeConfig.GetGinServerUrl(),
 		Transport:                  options.GetTransport(),
 		JwtSecret:                  connectingNodeConfig.JwtSecret,
 		JwtTokenExpirationDuration: connectingNodeConfig.JwtTokenExpirationDuration,
@@ -102,6 +103,7 @@ type ConnectingNodeConfig struct {
 	Ip                         string
 	HttpPort                   uint16
 	WebsocketPort              uint16
+	GinHttpPort                uint16
 	JwtSecret                  string
 	JwtTokenExpirationDuration time.Duration
 }
@@ -181,6 +183,11 @@ func (node *ConnectingNodeConfig) GetHttpUrl() string {
 
 func (node *ConnectingNodeConfig) GetWebsocketUrl() string {
 	return fmt.Sprintf("%s://%s:%d", websocketProtocol, node.Ip, node.WebsocketPort)
+}
+
+func (node *ConnectingNodeConfig) GetGinServerUrl() string {
+	port := lo.Ternary(node.GinHttpPort == 0, node.HttpPort+3, node.GinHttpPort)
+	return fmt.Sprintf("%s://%s:%d", lo.Ternary(node.Insecure, httpsProtocol, httpProtocol), node.Ip, port)
 }
 
 type Strategy string
