@@ -186,7 +186,7 @@ func (node *ConnectingNodeConfig) GetWebsocketUrl() string {
 }
 
 func (node *ConnectingNodeConfig) GetGinServerUrl() string {
-	port := lo.Ternary(node.GinHttpPort == 0, node.HttpPort+3, node.GinHttpPort)
+	port := lo.Ternary(node.GinHttpPort == 0, node.HttpPort+2, node.GinHttpPort)
 	return fmt.Sprintf("%s://%s:%d", lo.Ternary(node.Insecure, httpsProtocol, httpProtocol), node.Ip, port)
 }
 

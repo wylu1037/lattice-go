@@ -32,7 +32,7 @@ type NewSubChainRequest struct {
 	ContractPermission   bool             `json:"contractPermission"`   // 合约内部管理开关
 	ChainByChainVote     uint8            `json:"chainByChainVote"`     // 以链建链投票开关
 	ProposalExpireTime   uint             `json:"proposalExpireTime"`   // 提案过期时间（天）
-	ChannelDesc          string           `json:"desc"`                 // 通道描述
+	Desc                 string           `json:"desc"`                 // 链描述
 	Extra                []byte           `json:"extra"`                // 暂时不用的字段
 }
 
