@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,7 +12,10 @@ import (
 	"github.com/wylu1037/lattice-go/common/types"
 	"github.com/wylu1037/lattice-go/lattice/block"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -155,7 +159,8 @@ func (j *jwtImpl) GetToken() (string, error) {
 
 // HttpApiInitParam 初始化HTTP API的参数
 type HttpApiInitParam struct {
-	Url                        string          // 节点的URL
+	HttpUrl                    string          // 节点的URL
+	GinServerUrl               string          // 节点gin服务路径
 	Transport                  *http.Transport // tr
 	JwtSecret                  string          // jwt的secret信息
 	JwtTokenExpirationDuration time.Duration   // jwt token的过期时间
@@ -163,9 +168,10 @@ type HttpApiInitParam struct {
 
 func NewHttpApi(args *HttpApiInitParam) HttpApi {
 	return &httpApi{
-		Url:       args.Url,
-		transport: args.Transport,
-		jwtApi:    NewJwt(args.JwtSecret, args.JwtTokenExpirationDuration),
+		Url:          args.HttpUrl,
+		GinServerUrl: args.GinServerUrl,
+		transport:    args.Transport,
+		jwtApi:       NewJwt(args.JwtSecret, args.JwtTokenExpirationDuration),
 	}
 }
 
@@ -229,22 +235,48 @@ type HttpApi interface {
 	//    - types.Proposal[types.ContractLifecycleProposal]
 	//    - error
 	GetContractLifecycleProposal(ctx context.Context, chainId, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error)
+
+	// UploadFile 上传文件到链上
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainId string: 链ID
+	//   - filePath string: 文件路径
+	//
+	// Returns:
+	//   - *types.UploadFileResponse
+	//   - error
+	UploadFile(ctx context.Context, chainId, filePath string) (*types.UploadFileResponse, error)
 }
 
 type httpApi struct {
-	Url       string
-	transport *http.Transport
-	jwtApi    Jwt
+	Url          string          // 节点的Http请求路径
+	GinServerUrl string          // 节点的Gin服务请求路径
+	transport    *http.Transport // http transport
+	jwtApi       Jwt             // jwt api
 }
 
+const (
+	headerContentType = "Content-Type"
+	headerChainID     = "ChainId"
+	headerAuthorize   = "Authorization"
+)
+
+// 设置http的请求头
+//
+// Parameters:
+//   - chainId string
+//
+// Returns:
+//   - map[string]string
 func (api *httpApi) newHeaders(chainId string) map[string]string {
 	headers := map[string]string{
-		"Content-Type": "application/json",
-		"ChainId":      chainId,
+		headerContentType: "application/json",
+		headerChainID:     chainId,
 	}
 	if api.jwtApi != nil {
 		token, _ := api.jwtApi.GetToken()
-		headers["Authorization"] = fmt.Sprintf("Bearer %s", token)
+		headers[headerAuthorize] = fmt.Sprintf("Bearer %s", token)
 	}
 	return headers
 }
@@ -310,6 +342,68 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 	return *response.Result, nil
 }
 
+func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*types.UploadFileResponse, error) {
+	uploadPath := fmt.Sprintf("%s/%s", api.GinServerUrl, "beforeSign")
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer func(file *os.File) {
+		if err := file.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close file")
+		}
+	}(file)
+
+	part, err := writer.CreateFormFile("file", filepath.Base(file.Name()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create form file: %w", err)
+	}
+	if _, err = io.Copy(part, file); err != nil {
+		return nil, fmt.Errorf("failed to copy file data: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close writer: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, uploadPath, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set(headerContentType, writer.FormDataContentType()) // fmt.Sprintf("multipart/form-data; boundary=%s", writer.Boundary())
+	req.Header.Set(headerChainID, chainId)
+	if api.jwtApi != nil {
+		token, _ := api.jwtApi.GetToken()
+		req.Header.Set(headerAuthorize, fmt.Sprintf("Bearer %s", token))
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to do request: %w", err)
+	}
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close response body")
+		}
+	}(resp.Body)
+
+	responseData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	uploadFileResponse := new(types.UploadFileResponse)
+	if err := json.Unmarshal(responseData, uploadFileResponse); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal response body")
+		return nil, err
+	}
+	return uploadFileResponse, nil
+}
+
 // Post send http request use post method
 //
 // Parameters:
@@ -323,11 +417,11 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 //   - error: 错误
 func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
 	log.Debug().Msgf("开始发送JsonRpc请求，url: %s, body: %+v", url, jsonRpcBody)
-	bytes, err := json.Marshal(jsonRpcBody)
+	bodyBytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
 		return nil, err
 	}
-	body := strings.NewReader(string(bytes))
+	body := strings.NewReader(string(bodyBytes))
 
 	request, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {

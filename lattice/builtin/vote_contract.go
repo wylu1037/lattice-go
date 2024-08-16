@@ -5,7 +5,9 @@ import (
 )
 
 func NewVoteContract() VoteContract {
-	return &voteContract{}
+	return &voteContract{
+		abi: abi.NewAbi(VoteBuiltinContract.AbiString),
+	}
 }
 
 type VoteContract interface {
@@ -32,7 +34,9 @@ type VoteContract interface {
 	Disapprove(proposalId string) (string, error)
 }
 
-type voteContract struct{}
+type voteContract struct {
+	abi abi.LatticeAbi
+}
 
 const (
 	disapprove = iota // 反对
@@ -48,7 +52,7 @@ func (c *voteContract) vote(proposalId string, approve bool) (string, error) {
 }
 
 func (c *voteContract) Approve(proposalId string) (string, error) {
-	fn, err := abi.NewAbi(VoteBuiltinContract.AbiString).GetLatticeFunction("vote", proposalId, approve)
+	fn, err := c.abi.GetLatticeFunction("vote", proposalId, approve)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +66,7 @@ func (c *voteContract) Approve(proposalId string) (string, error) {
 }
 
 func (c *voteContract) Disapprove(proposalId string) (string, error) {
-	fn, err := abi.NewAbi(VoteBuiltinContract.AbiString).GetLatticeFunction("vote", proposalId, disapprove)
+	fn, err := c.abi.GetLatticeFunction("vote", proposalId, disapprove)
 	if err != nil {
 		return "", err
 	}
