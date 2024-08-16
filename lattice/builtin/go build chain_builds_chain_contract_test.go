@@ -8,23 +8,23 @@ import (
 	"testing"
 )
 
-func TestChainBuildsChainContract_NewSubchain(t *testing.T) {
+func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	mem := make([]SubchainMember, 1)
+	mem := make([]SubChainMember, 1)
 	for i := 0; i < len(mem); i++ {
 		addr, _ := convert.ZltcToAddress("zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D")
-		mem[i] = SubchainMember{
+		mem[i] = SubChainMember{
 			Type:   1,
 			Member: addr,
 		}
 	}
-	data, err := contract.NewSubchain(&NewSubchainRequest{
-		ChainId:              big.NewInt(101),
-		Name:                 "channel101",
-		Desc:                 "channel",
+	data, err := contract.NewSubChain(&NewSubChainRequest{
+		ChannelId:            big.NewInt(101),
+		ChannelName:          "channel101",
+		ChannelDesc:          "channel",
 		BootStrap:            "createNode",
 		Preacher:             "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi",
-		ChainMemberGroup:     mem,
+		ChannelMemberGroup:   mem,
 		Consensus:            1,
 		Tokenless:            true,
 		GodAmount:            big.NewInt(100),
@@ -43,39 +43,39 @@ func TestChainBuildsChainContract_NewSubchain(t *testing.T) {
 	assert.Equal(t, expectData, data)
 }
 
-func TestChainBuildsChainContract_StartSubchain(t *testing.T) {
+func TestChainBuildsChainContract_StartSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.StartSubchain("101")
+	data, err := contract.StartSubChain("101")
 	assert.NoError(t, err)
 	expectData := "0x7b777ddf0000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
 
 }
 
-func TestChainBuildsChainContract_StopSubchain(t *testing.T) {
+func TestChainBuildsChainContract_StopSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.StopSubchain("101")
+	data, err := contract.StopSubChain("101")
 	assert.NoError(t, err)
 	expectData := "0x27c9d3c80000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
 }
 
-func TestChainBuildsChainContract_DeleteSubchain(t *testing.T) {
+func TestChainBuildsChainContract_DeleteSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.DeleteSubchain("101")
+	data, err := contract.DeleteSubChain("101")
 	assert.NoError(t, err)
 	expectData := "0x34084eb10000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
 }
 
-func TestChainBuildsChainContract_JoinSubchain(t *testing.T) {
+func TestChainBuildsChainContract_JoinSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
 	mem := make([]common.Address, 1)
 	for i := 0; i < len(mem); i++ {
 		mem[i], _ = convert.ZltcToAddress("zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi")
 	}
-	data, err := contract.JoinSubchain(&JoinSubchainRequest{
-		SubchainId:    big.NewInt(101),
+	data, err := contract.JoinSubChain(&JoinSubChainRequest{
+		ChannelId:     big.NewInt(101),
 		NetworkId:     101,
 		NodeInfo:      "zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D",
 		AccessMembers: mem,
