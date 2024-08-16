@@ -1,6 +1,9 @@
 package builtin
 
-import "github.com/wylu1037/lattice-go/abi"
+import (
+	myabi "github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/wylu1037/lattice-go/abi"
+)
 
 func NewFileStorageContract() FileStorageContract {
 	return &fileStorageContract{
@@ -9,6 +12,18 @@ func NewFileStorageContract() FileStorageContract {
 }
 
 type FileStorageContract interface {
+
+	// MyAbi 返回存证合约的ABI对象
+	//
+	// Returns:
+	//   - *myabi.ABI
+	MyAbi() *myabi.ABI
+
+	// ContractAddress 获取文件存储的合约地址
+	//
+	// Returns:
+	//   - string: 合约地址，zltc_ZwptHk17UU4wojKDwywJ3hfB9ihvUhjAq
+	ContractAddress() string
 
 	// UploadFile 上传文件
 	//
@@ -51,6 +66,14 @@ type FileStorageContract interface {
 
 type fileStorageContract struct {
 	abi abi.LatticeAbi
+}
+
+func (c *fileStorageContract) MyAbi() *myabi.ABI {
+	return c.abi.MyAbi()
+}
+
+func (c *fileStorageContract) ContractAddress() string {
+	return FileStorageBuiltinContract.Address
 }
 
 func (c *fileStorageContract) UploadFile(accountAddress, filePath, nodeAddress, storageAddress string, OccupiedStorageByte int64, cid string) (string, error) {
