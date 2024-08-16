@@ -1,7 +1,10 @@
 package builtin
 
 import (
+	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/wylu1037/lattice-go/abi"
 	"math/big"
 )
 
@@ -38,6 +41,14 @@ type SubchainMember struct {
 	Member common.Address `json:"member"`     // 节点ZLTC地址
 }
 
+func (req *NewSubchainRequest) ToCallContractParams() (string, error) {
+	bytes, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
 // JoinSubchainRequest 加入子链请求
 type JoinSubchainRequest struct {
 	SubchainId    *big.Int         `json:"chainId"`       // 待加入的链ID
@@ -47,7 +58,9 @@ type JoinSubchainRequest struct {
 }
 
 func NewChainBuildsChainContract() ChainBuildsChainContract {
-	return &chainBuildsChainContract{}
+	return &chainBuildsChainContract{
+		abi: abi.NewAbi(ChainBuildsChainBuiltinContract.AbiString),
+	}
 }
 
 type ChainBuildsChainContract interface {
@@ -109,35 +122,56 @@ type ChainBuildsChainContract interface {
 	StopSubchain(subchainId string) (data string, err error)
 }
 
-type chainBuildsChainContract struct{}
+type chainBuildsChainContract struct {
+	abi abi.LatticeAbi
+}
 
 func (c *chainBuildsChainContract) ContractAddress() string {
 	return ChainBuildsChainBuiltinContract.Address
 }
 
 func (c *chainBuildsChainContract) NewSubchain(req *NewSubchainRequest) (data string, err error) {
-	//TODO implement me
-	panic("implement me")
+	args, err := req.ToCallContractParams()
+	if err != nil {
+		return "", err
+	}
+	code, err := c.abi.MyAbi().Pack("newChain", args)
+	if err != nil {
+		return "", err
+	}
+	return hexutil.Encode(code), nil
 }
 
 func (c *chainBuildsChainContract) DeleteSubchain(subchainId string) (data string, err error) {
-	//TODO implement me
-	panic("implement me")
+	fn, err := c.abi.GetLatticeFunction("delChain", subchainId)
+	if err != nil {
+		return "", err
+	}
+	return fn.Encode()
 }
 
 func (c *chainBuildsChainContract) JoinSubchain(req *JoinSubchainRequest) (data string, err error) {
-	//TODO implement me
-	panic("implement me")
+	code, err := c.abi.MyAbi().Pack("oldChain", req.SubchainId, req.NetworkId, req.NodeInfo, req.AccessMembers)
+	if err != nil {
+		return "", err
+	}
+	return hexutil.Encode(code), nil
 }
 
 func (c *chainBuildsChainContract) StartSubchain(subchainId string) (data string, err error) {
-	//TODO implement me
-	panic("implement me")
+	fn, err := c.abi.GetLatticeFunction("startChain", subchainId)
+	if err != nil {
+		return "", err
+	}
+	return fn.Encode()
 }
 
 func (c *chainBuildsChainContract) StopSubchain(subchainId string) (data string, err error) {
-	//TODO implement me
-	panic("implement me")
+	fn, err := c.abi.GetLatticeFunction("stopChain", subchainId)
+	if err != nil {
+		return "", err
+	}
+	return fn.Encode()
 }
 
 var ChainBuildsChainBuiltinContract = Contract{
