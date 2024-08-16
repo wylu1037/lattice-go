@@ -9,39 +9,39 @@ import (
 )
 
 const (
-	SubchainWitnessMember   = iota // 见证身份的链成员
-	SubchainConsensusMember        // 共识身份的链成员
+	SubChainWitnessMember   = iota // 见证身份的链成员
+	SubChainConsensusMember        // 共识身份的链成员
 )
 
-// NewSubchainRequest 创建一个子链的请求结构体
-type NewSubchainRequest struct {
+// NewSubChainRequest 创建一个子链的请求结构体
+type NewSubChainRequest struct {
 	Consensus            uint8            `json:"consensus"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
 	Tokenless            bool             `json:"tokenless"`            // 是否有通证
 	GodAmount            *big.Int         `json:"godAmount"`            // 盟主初始余额
 	Period               uint64           `json:"period"`               // 出块间隔
-	NoEmptyAnchor        bool             `json:"noEmptyAnchor"`        // 不允许快速出空块
+	NoEmptyAnchor        bool             `json:"noEmptyAnchor"`        // 不允许无交易时快速出空块
 	EmptyAnchorPeriodMul uint64           `json:"emptyAnchorPeriodMul"` // 空块等待次数
 	IsContractVote       bool             `json:"isContractVote"`       // 开启合约生命周期
-	IsDictatorship       bool             `json:"isDictatorship"`       // 开启盟主独裁
-	DeployRule           uint8            `json:"deployRule"`           // 合约部署规则
-	Name                 string           `json:"name"`                 // 链名称
-	ChainId              *big.Int         `json:"chainId"`              // 链id
+	IsDictatorship       bool             `json:"isDictatorship"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
+	DeployRule           uint8            `json:"deployRule"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
+	ChannelName          string           `json:"ChannelName"`          // 通道名称
+	ChannelId            *big.Int         `json:"channelId"`            // 通道id
 	Preacher             string           `json:"preacher"`             // 创世节点地址
 	BootStrap            string           `json:"bootStrap"`            // 创世节点Inode
-	ChainMemberGroup     []SubchainMember `json:"chainMemberGroup"`     // 链成员
+	ChannelMemberGroup   []SubChainMember `json:"ChannelMemberGroup"`   // 加入通道的成员
 	ContractPermission   bool             `json:"contractPermission"`   // 合约内部管理开关
 	ChainByChainVote     uint8            `json:"chainByChainVote"`     // 以链建链投票开关
 	ProposalExpireTime   uint             `json:"proposalExpireTime"`   // 提案过期时间（天）
-	Desc                 string           `json:"desc"`                 // 链描述
+	ChannelDesc          string           `json:"ChannelDesc"`          // 通道描述
 	Extra                []byte           `json:"extra"`                // 暂时不用的字段
 }
 
-type SubchainMember struct {
-	Type   uint8          `json:"memberType"` // 成员类型，0-见证、1-共识, SubchainWitnessMember or SubchainConsensusMember
+type SubChainMember struct {
+	Type   uint8          `json:"memberType"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
 	Member common.Address `json:"member"`     // 节点ZLTC地址
 }
 
-func (req *NewSubchainRequest) ToCallContractParams() (string, error) {
+func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return "", err
@@ -49,12 +49,12 @@ func (req *NewSubchainRequest) ToCallContractParams() (string, error) {
 	return string(bytes), nil
 }
 
-// JoinSubchainRequest 加入子链请求
-type JoinSubchainRequest struct {
-	SubchainId    *big.Int         `json:"chainId"`       // 待加入的链ID
-	NetworkId     uint64           `json:"networkId"`     // 待加入的链的所在的网络ID
-	NodeInfo      string           `json:"nodeInfo"`      // 指定一个已经加入该链的节点地址
-	AccessMembers []common.Address `json:"accessMembers"` // 指定哪些节点加入该链
+// JoinSubChainRequest 加入子链请求
+type JoinSubChainRequest struct {
+	ChannelId     *big.Int         `json:"chanelId"`      // 待加入的通道ID
+	NetworkId     uint64           `json:"networkId"`     // 待加入的通道的所在的网络ID
+	NodeInfo      string           `json:"nodeInfo"`      // 指定一个已经加入该通道的节点地址
+	AccessMembers []common.Address `json:"accessMembers"` // 指定哪些节点加入该通道
 }
 
 func NewChainBuildsChainContract() ChainBuildsChainContract {
@@ -71,55 +71,55 @@ type ChainBuildsChainContract interface {
 	//   - string: 合约地址，zltc_ZDfqCd4ZbBi4WA7uG4cGpFWRyTFqzyHUn
 	ContractAddress() string
 
-	// NewSubchain 创建子链
+	// NewSubChain 创建子链
 	//
 	// Parameters:
-	//   - req *NewSubchainRequest
+	//   - req *NewSubChainRequest
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	NewSubchain(req *NewSubchainRequest) (data string, err error)
+	NewSubChain(req *NewSubChainRequest) (data string, err error)
 
-	// DeleteSubchain 删除子链
+	// DeleteSubChain 删除子链
 	//
 	// Parameters:
-	//   - subchainId string: 子链id
+	//   - SubChainId string: 子链id
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	DeleteSubchain(subchainId string) (data string, err error)
+	DeleteSubChain(SubChainId string) (data string, err error)
 
-	// JoinSubchain 加入子链
+	// JoinSubChain 加入子链
 	//
 	// Parameters:
-	//   - req *JoinSubchainRequest
+	//   - req *JoinSubChainRequest
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	JoinSubchain(req *JoinSubchainRequest) (data string, err error)
+	JoinSubChain(req *JoinSubChainRequest) (data string, err error)
 
-	// StartSubchain 启动子链
+	// StartSubChain 启动子链
 	//
 	// Parameters:
-	//   - subchainId string: 子链id
+	//   - SubChainId string: 子链id
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	StartSubchain(subchainId string) (data string, err error)
+	StartSubChain(SubChainId string) (data string, err error)
 
-	// StopSubchain 停止子链
+	// StopSubChain 停止子链
 	//
 	// Parameters:
-	//   - subchainId string: 子链id
+	//   - SubChainId string: 子链id
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	StopSubchain(subchainId string) (data string, err error)
+	StopSubChain(SubChainId string) (data string, err error)
 }
 
 type chainBuildsChainContract struct {
@@ -130,7 +130,7 @@ func (c *chainBuildsChainContract) ContractAddress() string {
 	return ChainBuildsChainBuiltinContract.Address
 }
 
-func (c *chainBuildsChainContract) NewSubchain(req *NewSubchainRequest) (data string, err error) {
+func (c *chainBuildsChainContract) NewSubChain(req *NewSubChainRequest) (data string, err error) {
 	args, err := req.ToCallContractParams()
 	if err != nil {
 		return "", err
@@ -142,32 +142,32 @@ func (c *chainBuildsChainContract) NewSubchain(req *NewSubchainRequest) (data st
 	return hexutil.Encode(code), nil
 }
 
-func (c *chainBuildsChainContract) DeleteSubchain(subchainId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("delChain", subchainId)
+func (c *chainBuildsChainContract) DeleteSubChain(channelId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("delChain", channelId)
 	if err != nil {
 		return "", err
 	}
 	return fn.Encode()
 }
 
-func (c *chainBuildsChainContract) JoinSubchain(req *JoinSubchainRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("oldChain", req.SubchainId, req.NetworkId, req.NodeInfo, req.AccessMembers)
+func (c *chainBuildsChainContract) JoinSubChain(req *JoinSubChainRequest) (data string, err error) {
+	code, err := c.abi.MyAbi().Pack("oldChain", req.ChannelId, req.NetworkId, req.NodeInfo, req.AccessMembers)
 	if err != nil {
 		return "", err
 	}
 	return hexutil.Encode(code), nil
 }
 
-func (c *chainBuildsChainContract) StartSubchain(subchainId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("startChain", subchainId)
+func (c *chainBuildsChainContract) StartSubChain(channelId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("startChain", channelId)
 	if err != nil {
 		return "", err
 	}
 	return fn.Encode()
 }
 
-func (c *chainBuildsChainContract) StopSubchain(subchainId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("stopChain", subchainId)
+func (c *chainBuildsChainContract) StopSubChain(channelId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("stopChain", channelId)
 	if err != nil {
 		return "", err
 	}
