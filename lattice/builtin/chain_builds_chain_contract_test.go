@@ -24,7 +24,7 @@ func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 		ChannelDesc:          "channel",
 		BootStrap:            "createNode",
 		Preacher:             "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi",
-		ChainMemberGroup:     mem,
+		ChannelMemberGroup:   mem,
 		Consensus:            1,
 		Tokenless:            true,
 		GodAmount:            big.NewInt(100),

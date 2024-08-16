@@ -19,20 +19,20 @@ type NewSubChainRequest struct {
 	Tokenless            bool             `json:"tokenless"`            // 是否有通证
 	GodAmount            *big.Int         `json:"godAmount"`            // 盟主初始余额
 	Period               uint64           `json:"period"`               // 出块间隔
-	NoEmptyAnchor        bool             `json:"noEmptyAnchor"`        // 不允许快速出空块
+	NoEmptyAnchor        bool             `json:"noEmptyAnchor"`        // 不允许无交易时快速出空块
 	EmptyAnchorPeriodMul uint64           `json:"emptyAnchorPeriodMul"` // 空块等待次数
 	IsContractVote       bool             `json:"isContractVote"`       // 开启合约生命周期
-	IsDictatorship       bool             `json:"isDictatorship"`       // 开启盟主独裁
-	DeployRule           uint8            `json:"deployRule"`           // 合约部署规则
-	ChannelName          string           `json:"name"`                 // 链名称
-	ChannelId            *big.Int         `json:"chainId"`              // 链id
+	IsDictatorship       bool             `json:"isDictatorship"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
+	DeployRule           uint8            `json:"deployRule"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
+	ChannelName          string           `json:"name"`                 // 通道名称
+	ChannelId            *big.Int         `json:"chainId"`              // 通道id
 	Preacher             string           `json:"preacher"`             // 创世节点地址
 	BootStrap            string           `json:"bootStrap"`            // 创世节点Inode
-	ChainMemberGroup     []SubChainMember `json:"chainMemberGroup"`     // 链成员
+	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup"`     // 加入通道的成员
 	ContractPermission   bool             `json:"contractPermission"`   // 合约内部管理开关
 	ChainByChainVote     uint8            `json:"chainByChainVote"`     // 以链建链投票开关
 	ProposalExpireTime   uint             `json:"proposalExpireTime"`   // 提案过期时间（天）
-	ChannelDesc          string           `json:"desc"`                 // 链描述
+	ChannelDesc          string           `json:"desc"`                 // 通道描述
 	Extra                []byte           `json:"extra"`                // 暂时不用的字段
 }
 
