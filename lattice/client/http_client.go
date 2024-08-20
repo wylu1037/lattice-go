@@ -247,6 +247,17 @@ type HttpApi interface {
 	//   - *types.UploadFileResponse
 	//   - error
 	UploadFile(ctx context.Context, chainId, filePath string) (*types.UploadFileResponse, error)
+
+	// DownloadFile 从链上下载文件
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - cid string: 要下载文件的cid
+	//   - filePath string: 指定的临时存储路径
+	//
+	// Returns:
+	//   - error
+	DownloadFile(ctx context.Context, cid, filePath string) error
 }
 
 type httpApi struct {
@@ -260,6 +271,7 @@ const (
 	headerContentType = "Content-Type"
 	headerChainID     = "ChainId"
 	headerAuthorize   = "Authorization"
+	headerConnection  = "Connection"
 )
 
 // 设置http的请求头
@@ -343,6 +355,7 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 }
 
 func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*types.UploadFileResponse, error) {
+	log.Debug().Msgf("开始上传文件到链上，chainId: %s, filePath: %s", chainId, filePath)
 	uploadPath := fmt.Sprintf("%s/%s", api.GinServerUrl, "beforeSign")
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -401,7 +414,68 @@ func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*ty
 		log.Error().Err(err).Msg("Failed to unmarshal response body")
 		return nil, err
 	}
+	log.Debug().Msgf("结束上传文件【%s】到链上", filePath)
 	return uploadFileResponse, nil
+}
+
+// DownloadFile 从链上下载文件
+//
+// Parameters:
+//   - ctx context.Context
+//   - cid string: 文件的唯一标识
+//   - filePath string: 文件暂存路径
+//
+// Returns:
+//   - error
+func (api *httpApi) DownloadFile(_ context.Context, cid, filePath string) error {
+	log.Debug().Msgf("开始从链上下载文件【%s】", cid)
+	downloadUrl := fmt.Sprintf("%s/download?cid=%s", api.GinServerUrl, cid)
+
+	downloadReq, err := http.NewRequest(http.MethodGet, downloadUrl, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create request for download")
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	if api.jwtApi != nil {
+		token, _ := api.jwtApi.GetToken()
+		downloadReq.Header.Set(headerAuthorize, fmt.Sprintf("Bearer %s", token))
+		downloadReq.Header.Set(headerContentType, "multipart/form-data; charset=UTF-8")
+		downloadReq.Header.Set(headerConnection, "close")
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(downloadReq)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to download file")
+		return fmt.Errorf("failed to download file: %w", err)
+	}
+	defer func(Body io.ReadCloser) {
+		if err := Body.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close response body")
+
+		}
+	}(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("下载文件【%s】失败，Http状态吗为: %d", cid, resp.StatusCode)
+	}
+
+	outFile, err := os.Create(filePath)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create file")
+		return fmt.Errorf("failed to create file %s: %w", filePath, err)
+	}
+	defer func(file *os.File) {
+		if err := file.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close response body")
+		}
+	}(outFile)
+	_, err = io.Copy(outFile, resp.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to copy file data")
+	}
+
+	log.Debug().Msgf("结束从链上下载文件【%s】", cid)
+	return nil
 }
 
 // Post send http request use post method

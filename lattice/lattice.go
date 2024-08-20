@@ -236,7 +236,7 @@ func DefaultBackOffRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy: BackOff,
 		Attempts: 15,
-		Delay:    time.Millisecond * 200,
+		Delay:    time.Millisecond * 150,
 	}
 }
 
@@ -256,7 +256,7 @@ func DefaultFixedRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy: FixedInterval,
 		Attempts: 15,
-		Delay:    time.Millisecond * 100,
+		Delay:    time.Millisecond * 150,
 	}
 }
 
@@ -279,7 +279,7 @@ func DefaultRandomRetryStrategy() *RetryStrategy {
 	return &RetryStrategy{
 		Strategy:  RandomInterval,
 		Attempts:  15,
-		Delay:     time.Millisecond * 100,
+		Delay:     time.Millisecond * 150,
 		MaxJitter: time.Millisecond * 500, // 最大的随机抖动
 	}
 }
