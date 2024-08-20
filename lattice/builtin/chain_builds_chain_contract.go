@@ -15,30 +15,30 @@ const (
 
 // NewSubChainRequest 创建一个子链的请求结构体
 type NewSubChainRequest struct {
-	Consensus            uint8            `json:"consensus"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
-	Tokenless            bool             `json:"tokenless"`            // 是否有通证
-	GodAmount            *big.Int         `json:"godAmount"`            // 盟主初始余额
-	Period               uint64           `json:"period"`               // 出块间隔
-	NoEmptyAnchor        bool             `json:"noEmptyAnchor"`        // 不允许无交易时快速出空块
-	EmptyAnchorPeriodMul uint64           `json:"emptyAnchorPeriodMul"` // 空块等待次数
-	IsContractVote       bool             `json:"isContractVote"`       // 开启合约生命周期
-	IsDictatorship       bool             `json:"isDictatorship"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
-	DeployRule           uint8            `json:"deployRule"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
-	ChannelName          string           `json:"name"`                 // 通道名称
-	ChannelId            *big.Int         `json:"chainId"`              // 通道id
-	Preacher             string           `json:"preacher"`             // 创世节点地址
-	BootStrap            string           `json:"bootStrap"`            // 创世节点Inode
-	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup"`     // 加入通道的成员
-	ContractPermission   bool             `json:"contractPermission"`   // 合约内部管理开关
-	ChainByChainVote     uint8            `json:"chainByChainVote"`     // 以链建链投票开关
-	ProposalExpireTime   uint             `json:"proposalExpireTime"`   // 提案过期时间（天）
-	Desc                 string           `json:"desc"`                 // 链描述
-	Extra                []byte           `json:"extra"`                // 暂时不用的字段
+	Consensus            uint8            `json:"consensus,omitempty"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
+	Tokenless            bool             `json:"tokenless,omitempty"`            // 是否有通证
+	GodAmount            *big.Int         `json:"godAmount,omitempty"`            // 盟主初始余额
+	Period               uint64           `json:"period,omitempty"`               // 出块间隔
+	NoEmptyAnchor        bool             `json:"noEmptyAnchor,omitempty"`        // 不允许无交易时快速出空块
+	EmptyAnchorPeriodMul uint64           `json:"emptyAnchorPeriodMul,omitempty"` // 空块等待次数
+	IsContractVote       bool             `json:"isContractVote,omitempty"`       // 开启合约生命周期
+	IsDictatorship       bool             `json:"isDictatorship,omitempty"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
+	DeployRule           uint8            `json:"deployRule,omitempty"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
+	ChannelName          string           `json:"name,omitempty"`                 // 通道名称
+	ChannelId            *big.Int         `json:"chainId,omitempty"`              // 通道id
+	Preacher             common.Address   `json:"preacher,omitempty"`             // 创世节点地址
+	BootStrap            string           `json:"bootStrap,omitempty"`            // 创世节点Inode
+	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
+	ContractPermission   bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
+	ChainByChainVote     uint8            `json:"chainByChainVote,omitempty"`     // 以链建链投票开关
+	ProposalExpireTime   uint             `json:"proposalExpireTime,omitempty"`   // 提案过期时间（天）
+	Desc                 string           `json:"desc,omitempty"`                 // 链描述
+	Extra                []byte           `json:"extra,omitempty"`                // 暂时不用的字段
 }
 
 type SubChainMember struct {
-	Type   uint8          `json:"memberType"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
-	Member common.Address `json:"member"`     // 节点ZLTC地址
+	Type   uint8          `json:"memberType,omitempty"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
+	Member common.Address `json:"member,omitempty"`     // 节点ZLTC地址
 }
 
 func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
@@ -51,10 +51,10 @@ func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
 
 // JoinSubChainRequest 加入子链请求
 type JoinSubChainRequest struct {
-	ChannelId     *big.Int         `json:"chainId"`       // 待加入的链ID
-	NetworkId     uint64           `json:"networkId"`     // 待加入的链的所在的网络ID
-	NodeInfo      string           `json:"nodeInfo"`      // 指定一个已经加入该链的节点地址
-	AccessMembers []common.Address `json:"accessMembers"` // 指定哪些节点加入该链
+	ChannelId     *big.Int         `json:"chainId,omitempty"`       // 待加入的链ID
+	NetworkId     uint64           `json:"networkId,omitempty"`     // 待加入的链的所在的网络ID
+	NodeInfo      string           `json:"nodeInfo,omitempty"`      // 指定一个已经加入该链的节点地址
+	AccessMembers []common.Address `json:"accessMembers,omitempty"` // 指定哪些节点加入该链
 }
 
 func NewChainBuildsChainContract() ChainBuildsChainContract {
