@@ -34,3 +34,28 @@ type UploadFileResponse struct {
 	OccupiedStorageByte int64  `json:"needStorageSize,omitempty"`
 	StorageAddress      string `json:"storageAddress,omitempty"`
 }
+
+// NodeInfo 节点
+//
+//   - ID 示例：16Uiu2HAmQ7Da6iuScYSYs8XGJs95hiKdS6tgmbqUUuKC62Xh3s4V
+//   - Name 示例：ZLTC2_1
+//   - Version
+//   - INode 节点连接信息，示例：/ip4/192.168.1.185/tcp/13801/p2p/16Uiu2HAmQ7Da6iuScYSYs8XGJs95hiKdS6tgmbqUUuKC62Xh3s4V
+//   - Inr
+//   - IP
+//   - Ports
+//   - ListenAddress
+type NodeInfo struct {
+	ID      string `json:"id,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+	INode   string `json:"inode,omitempty"`
+	Inr     string `json:"inr,omitempty"`
+	IP      string `json:"ip,omitempty"`
+	Ports   struct {
+		P2PPort       uint16 `json:"discovery,omitempty"`
+		WebsocketPort uint16 `json:"listener,omitempty"`
+		HTTPPort      uint16 `json:"httpPort,omitempty"`
+	}
+	ListenAddress string `json:"listenAddr,omitempty"`
+}

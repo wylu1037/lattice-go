@@ -20,6 +20,8 @@ import (
 	"time"
 )
 
+const emptyChainId = ""
+
 // JsonRpcBody Json-Rpc的请求体结构
 type JsonRpcBody struct {
 	Id      int           `json:"id,omitempty"`
@@ -176,7 +178,8 @@ func NewHttpApi(args *HttpApiInitParam) HttpApi {
 }
 
 type HttpApi interface {
-	// GetLatestBlock 获取当前账户的最新的区块信息
+
+	// GetLatestBlock 获取当前账户的最新的区块信息，不包括pending中的交易
 	//
 	// Parameters:
 	//   - ctx context.Context
@@ -187,6 +190,18 @@ type HttpApi interface {
 	//   - types.LatestBlock
 	//   - error
 	GetLatestBlock(ctx context.Context, chainId, accountAddress string) (*types.LatestBlock, error)
+
+	// GetLatestBlockWithPending 获取当前账户的最新的区块信息，包括pending中的交易
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainId string
+	//   - accountAddress string: 账户地址，zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
+	//
+	// Returns:
+	//   - types.LatestBlock
+	//   - error
+	GetLatestBlockWithPending(ctx context.Context, chainId, accountAddress string) (*types.LatestBlock, error)
 
 	// SendSignedTransaction 发送已签名的交易
 	//
@@ -258,6 +273,16 @@ type HttpApi interface {
 	// Returns:
 	//   - error
 	DownloadFile(ctx context.Context, cid, filePath string) error
+
+	// GetNodeInfo 获取节点信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//
+	// Returns:
+	//   - *types.NodeInfo,
+	//   - error
+	GetNodeInfo(ctx context.Context) (*types.NodeInfo, error)
 }
 
 type httpApi struct {
@@ -295,6 +320,17 @@ func (api *httpApi) newHeaders(chainId string) map[string]string {
 
 func (api *httpApi) GetLatestBlock(_ context.Context, chainId, accountAddress string) (*types.LatestBlock, error) {
 	response, err := Post[types.LatestBlock](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetLatestBlockWithPending(_ context.Context, chainId, accountAddress string) (*types.LatestBlock, error) {
+	response, err := Post[types.LatestBlock](api.Url, NewJsonRpcBody("latc_getPendingTBDB", accountAddress), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -476,6 +512,17 @@ func (api *httpApi) DownloadFile(_ context.Context, cid, filePath string) error 
 
 	log.Debug().Msgf("结束从链上下载文件【%s】", cid)
 	return nil
+}
+
+func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
+	response, err := Post[types.NodeInfo](api.Url, NewJsonRpcBody("node_nodeInfo"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
 }
 
 // Post send http request use post method
