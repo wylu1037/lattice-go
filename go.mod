@@ -6,6 +6,7 @@ require (
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/bufbuild/protocompile v0.14.0
 	github.com/defiweb/go-eth v0.6.1
 	github.com/ethereum/go-ethereum v1.14.6
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -17,6 +18,7 @@ require (
 	github.com/tyler-smith/go-bip32 v1.0.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	golang.org/x/crypto v0.23.0
+	google.golang.org/protobuf v1.34.2-0.20240529085009-ca837e5c658b
 )
 
 require (

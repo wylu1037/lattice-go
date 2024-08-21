@@ -3,6 +3,7 @@ package lattice
 import (
 	"context"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/wylu1037/lattice-go/abi"
 	"github.com/wylu1037/lattice-go/common/constant"
@@ -10,20 +11,23 @@ import (
 	"github.com/wylu1037/lattice-go/common/types"
 	"github.com/wylu1037/lattice-go/crypto"
 	"github.com/wylu1037/lattice-go/lattice/builtin"
+	"github.com/wylu1037/lattice-go/lattice/protobuf"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
 const (
+	proto      = "syntax = \"proto3\";\n\nmessage Student {\n\tstring id = 1;\n\tstring name = 2;\n}"
 	counterAbi = `[{"inputs":[],"name":"decrementCounter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getCount","outputs":[{"internalType":"int256","name":"","type":"int256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"incrementCounter","outputs":[],"stateMutability":"nonpayable","type":"function"}]`
 	chainId    = "1"
 )
 
 var latticeClient = NewLattice(
 	&ChainConfig{Curve: crypto.Sm2p256v1},
-	&ConnectingNodeConfig{Ip: "192.168.1.185", HttpPort: 13000, GinHttpPort: 15002},
+	&ConnectingNodeConfig{Ip: "192.168.1.185", HttpPort: 13000},
 	NewMemoryBlockCache(10*time.Second, time.Minute, time.Minute),
 	NewAccountLock(),
 	&Options{MaxIdleConnsPerHost: 200},
@@ -32,6 +36,59 @@ var latticeClient = NewLattice(
 var credentials = &Credentials{
 	AccountAddress: "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi",
 	PrivateKey:     "0x23d5b2a2eb0a9c8b86d62cbc3955cfd1fb26ec576ecc379f402d0f5d2b27a7bb",
+}
+
+// 创建业务合约地址
+func TestNewLattice_CreateBusiness(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	data, err := contract.CreateBusiness()
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.GetCreateBusinessContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultFixedRetryStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	t.Logf("业务合约地址：%s", receipt.ContractRet)
+	t.Log(string(r))
+}
+
+// 创建协议
+func TestNewLattice_CreateProtocol(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	data, err := contract.CreateProtocol(2, []byte(proto))
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.ContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultBackOffRetryStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	result, err := abi.DecodeReturn(contract.MyAbi(), "addProtocol", receipt.ContractRet)
+	assert.NoError(t, err)
+	t.Logf("创建协议返回：%s", result)
+	t.Log(string(r))
+}
+
+// 数据存证
+func TestNewLattice_Write(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	jsonData := `{"id":"1","name":"jack"}`
+
+	fd := protobuf.MakeFileDescriptor(strings.NewReader(proto))
+	dataBytes, err := protobuf.MarshallMessage(fd, jsonData)
+	assert.NoError(t, err)
+	data, err := contract.Write(&builtin.WriteLedgerRequest{
+		ProtocolUri: 8589934594,
+		Hash:        "2",
+		Data:        convert.BytesToBytes32Arr(dataBytes),
+		Address:     common.HexToAddress("0x130c46461ff0e4fe8d6660cf4c8d88afb9ab1daf"),
+	})
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.ContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultBackOffRetryStrategy())
+	assert.NoError(t, err)
+	t.Logf("结束数据存证，交易哈希为：%s", hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	t.Log(string(r))
 }
 
 func TestLattice_Transfer(t *testing.T) {
@@ -126,28 +183,4 @@ func TestLattice_CallContract(t *testing.T) {
 
 	elapsedTime := time.Since(startTime)
 	t.Logf("Elapsed Time: %v", elapsedTime)
-}
-
-func TestNewLattice_CreateBusiness(t *testing.T) {
-	contract := builtin.NewCredibilityContract()
-	data, err := contract.CreateBusiness()
-	assert.NoError(t, err)
-	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.GetCreateBusinessContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultFixedRetryStrategy())
-	assert.NoError(t, err)
-	t.Log(hash.String())
-	r, err := json.Marshal(receipt)
-	assert.NoError(t, err)
-	t.Log(string(r))
-}
-
-func TestNewLattice_CreateProtocol(t *testing.T) {
-	contract := builtin.NewCredibilityContract()
-	data, err := contract.CreateProtocol(2, []byte("123456"))
-	assert.NoError(t, err)
-	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.ContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultBackOffRetryStrategy())
-	assert.NoError(t, err)
-	t.Log(hash.String())
-	r, err := json.Marshal(receipt)
-	assert.NoError(t, err)
-	t.Log(string(r))
 }
