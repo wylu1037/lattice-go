@@ -34,6 +34,15 @@ type CreateProtocolRequest struct {
 	Data          [][32]byte `json:"data"`
 }
 
+// UpdateProtocolRequest 更新协议的结构体
+//
+//   - ProtocolUri 协议号
+//   - Data 更新的内容
+type UpdateProtocolRequest struct {
+	ProtocolUri uint64     `json:"protocolUri"`
+	Data        [][32]byte `json:"data"`
+}
+
 type CredibilityContract interface {
 
 	// MyAbi 返回存证合约的ABI对象
@@ -102,6 +111,16 @@ type CredibilityContract interface {
 	//   - data string
 	//   - err error
 	UpdateProtocol(uri uint64, message []byte) (data string, err error)
+
+	// BatchUpdateProtocol 批量更新协议
+	//
+	// Parameters:
+	//   - request []UpdateProtocolRequest
+	//
+	// Returns:
+	//   - data string
+	//   - err error
+	BatchUpdateProtocol(request []UpdateProtocolRequest) (data string, err error)
 
 	// Write 写入存证数据
 	//
@@ -189,6 +208,15 @@ func (c *credibilityContract) UpdateProtocol(uri uint64, message []byte) (data s
 	}
 
 	return fn.Encode()
+}
+
+func (c *credibilityContract) BatchUpdateProtocol(request []UpdateProtocolRequest) (data string, err error) {
+	code, err := c.abi.MyAbi().Pack("updateProtocolBatch", request)
+	if err != nil {
+		return "", err
+	}
+
+	return hexutil.Encode(code), nil
 }
 
 func (c *credibilityContract) Write(request *WriteLedgerRequest) (data string, err error) {
@@ -327,6 +355,37 @@ var CredibilityBuiltinContract = Contract{
 					"internalType": "uint64",
 					"name": "protocolUri",
 					"type": "uint64"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"components": [
+						{
+							"internalType": "uint64",
+							"name": "ProtocolUri",
+							"type": "uint64"
+						},
+						{
+							"internalType": "bytes32[]",
+							"name": "data",
+							"type": "bytes32[]"
+						}
+					],
+					"internalType": "struct ProtocolParam[]",
+					"name": "protocols",
+					"type": "tuple[]"
+				}
+			],
+			"name": "updateProtocolBatch",
+			"outputs": [
+				{
+					"internalType": "uint64[]",
+					"name": "",
+					"type": "uint64[]"
 				}
 			],
 			"stateMutability": "nonpayable",
