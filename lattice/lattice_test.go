@@ -68,6 +68,31 @@ func TestNewLattice_CreateProtocol(t *testing.T) {
 	t.Log(string(r))
 }
 
+// 批量创建协议
+func TestNewLattice_BatchCreateProtocol(t *testing.T) {
+	contract := builtin.NewCredibilityContract()
+	request := make([]builtin.CreateProtocolRequest, 2)
+	request[0] = builtin.CreateProtocolRequest{
+		ProtocolSuite: 10,
+		Data:          convert.BytesToBytes32Arr([]byte("syntax = \"proto3\";\n\nmessage Student {\n\tstring id = 1;\n\tstring name = 2;\n}")),
+	}
+	request[1] = builtin.CreateProtocolRequest{
+		ProtocolSuite: 10,
+		Data:          convert.BytesToBytes32Arr([]byte("syntax = \"proto3\";\n\nmessage Student {\n\tstring id = 1;\n\tstring name = 2;\n}")),
+	}
+	data, err := contract.BatchCreateProtocol(request)
+	assert.NoError(t, err)
+	hash, receipt, err := latticeClient.CallContractWaitReceipt(context.Background(), credentials, chainId, contract.ContractAddress(), data, constant.ZeroPayload, 0, 0, DefaultBackOffRetryStrategy())
+	assert.NoError(t, err)
+	t.Log(hash.String())
+	r, err := json.Marshal(receipt)
+	assert.NoError(t, err)
+	result, err := abi.DecodeReturn(contract.MyAbi(), "addProtocolBatch", receipt.ContractRet)
+	assert.NoError(t, err)
+	t.Logf("批量创建协议返回：%s", result)
+	t.Log(string(r))
+}
+
 // 数据存证
 func TestNewLattice_Write(t *testing.T) {
 	contract := builtin.NewCredibilityContract()

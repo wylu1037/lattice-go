@@ -25,6 +25,15 @@ type WriteLedgerRequest struct {
 	Address     common.Address `json:"address"`     // businessContractAddress:业务合约地址
 }
 
+// CreateProtocolRequest 创建协议的结构体
+//
+//   - ProtocolSuite 协议簇（行业号）
+//   - Data 协议内容
+type CreateProtocolRequest struct {
+	ProtocolSuite uint64     `json:"protocolSuite"`
+	Data          [][32]byte `json:"data"`
+}
+
 type CredibilityContract interface {
 
 	// MyAbi 返回存证合约的ABI对象
@@ -62,6 +71,16 @@ type CredibilityContract interface {
 	//   - data string
 	//   - err error
 	CreateProtocol(tradeNumber uint64, message []byte) (data string, err error)
+
+	// BatchCreateProtocol 批量创建协议
+	//
+	// Parameters:
+	//   - request []CreateProtocolRequest
+	//
+	// Returns:
+	//   - data string
+	//   - err error
+	BatchCreateProtocol(request []CreateProtocolRequest) (data string, err error)
 
 	// ReadProtocol 读取协议
 	//
@@ -145,6 +164,15 @@ func (c *credibilityContract) CreateProtocol(tradeNumber uint64, message []byte)
 	return fn.Encode()
 }
 
+func (c *credibilityContract) BatchCreateProtocol(request []CreateProtocolRequest) (data string, err error) {
+	code, err := c.abi.MyAbi().Pack("addProtocolBatch", request)
+	if err != nil {
+		return "", err
+	}
+
+	return hexutil.Encode(code), nil
+}
+
 func (c *credibilityContract) ReadProtocol(uri uint64) (data string, err error) {
 	fn, err := c.abi.GetLatticeFunction("getAddress", uri)
 	if err != nil {
@@ -221,6 +249,37 @@ var CredibilityBuiltinContract = Contract{
 		{
 			"inputs": [
 				{
+					"components": [
+						{
+							"internalType": "uint64",
+							"name": "ProtocolSuite",
+							"type": "uint64"
+						},
+						{
+							"internalType": "bytes32[]",
+							"name": "data",
+							"type": "bytes32[]"
+						}
+					],
+					"internalType": "struct ProtocolSuiteParam[]",
+					"name": "protocols",
+					"type": "tuple[]"
+				}
+			],
+			"name": "addProtocolBatch",
+			"outputs": [
+				{
+					"internalType": "uint64[]",
+					"name": "",
+					"type": "uint64[]"
+				}
+			],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
 					"internalType": "uint64",
 					"name": "protocolUri",
 					"type": "uint64"
@@ -263,7 +322,13 @@ var CredibilityBuiltinContract = Contract{
 				}
 			],
 			"name": "updateProtocol",
-			"outputs": [],
+			"outputs": [
+				{
+					"internalType": "uint64",
+					"name": "protocolUri",
+					"type": "uint64"
+				}
+			],
 			"stateMutability": "nonpayable",
 			"type": "function"
 		},
@@ -316,6 +381,24 @@ var CredibilityBuiltinContract = Contract{
 		{
 			"inputs": [
 				{
+					"internalType": "string",
+					"name": "hash",
+					"type": "string"
+				},
+				{
+					"internalType": "address",
+					"name": "address",
+					"type": "address"
+				}
+			],
+			"name": "setDataSecret",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
 					"internalType": "uint64",
 					"name": "protocolUri",
 					"type": "uint64"
@@ -337,6 +420,34 @@ var CredibilityBuiltinContract = Contract{
 				}
 			],
 			"name": "writeTraceability",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "uint64",
+					"name": "protocolUri",
+					"type": "uint64"
+				},
+				{
+					"internalType": "string",
+					"name": "hash",
+					"type": "string"
+				},
+				{
+					"internalType": "bytes32[]",
+					"name": "data",
+					"type": "bytes32[]"
+				},
+				{
+					"internalType": "address",
+					"name": "address",
+					"type": "address"
+				}
+			],
+			"name": "writeTraceabilityWithStatus",
 			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"
@@ -372,6 +483,67 @@ var CredibilityBuiltinContract = Contract{
 				}
 			],
 			"name": "writeTraceabilityBatch",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"components": [
+						{
+							"internalType": "uint64",
+							"name": "protocolUri",
+							"type": "uint64"
+						},
+						{
+							"internalType": "string",
+							"name": "hash",
+							"type": "string"
+						},
+						{
+							"internalType": "bytes32[]",
+							"name": "data",
+							"type": "bytes32[]"
+						},
+						{
+							"internalType": "address",
+							"name": "address",
+							"type": "address"
+						}
+					],
+					"internalType": "struct Business.batch[]",
+					"name": "bt",
+					"type": "tuple[]"
+				}
+			],
+			"name": "writeTraceabilityBatchWithStatus",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "string",
+					"name": "hash",
+					"type": "string"
+				}
+			],
+			"name": "quickWriteTraceability",
+			"outputs": [],
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "string",
+					"name": "hash",
+					"type": "string"
+				}
+			],
+			"name": "getQuickTraceability",
 			"outputs": [],
 			"stateMutability": "nonpayable",
 			"type": "function"
