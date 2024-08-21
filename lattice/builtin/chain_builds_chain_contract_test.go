@@ -12,19 +12,17 @@ func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
 	mem := make([]SubChainMember, 1)
 	for i := 0; i < len(mem); i++ {
-		addr, _ := convert.ZltcToAddress("zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D")
 		mem[i] = SubChainMember{
-			Type:   1,
-			Member: addr,
+			Type:    1,
+			Address: "zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D",
 		}
 	}
-	preacher, _ := convert.ZltcToAddress("zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi")
 	data, err := contract.NewSubChain(&NewSubChainRequest{
 		ChannelId:            big.NewInt(101),
 		ChannelName:          "channel101",
 		Desc:                 "channel",
 		BootStrap:            "createNode",
-		Preacher:             preacher,
+		Preacher:             "zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi",
 		ChannelMemberGroup:   mem,
 		Consensus:            1,
 		Tokenless:            true,

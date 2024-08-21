@@ -26,7 +26,7 @@ type NewSubChainRequest struct {
 	DeployRule           uint8            `json:"deployRule,omitempty"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
 	ChannelName          string           `json:"name,omitempty"`                 // 通道名称
 	ChannelId            *big.Int         `json:"chainId,omitempty"`              // 通道id
-	Preacher             common.Address   `json:"preacher,omitempty"`             // 创世节点地址
+	Preacher             string           `json:"preacher,omitempty"`             // 创世节点地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
 	BootStrap            string           `json:"bootStrap,omitempty"`            // 创世节点Inode
 	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
 	ContractPermission   bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
@@ -37,8 +37,8 @@ type NewSubChainRequest struct {
 }
 
 type SubChainMember struct {
-	Type   uint8          `json:"memberType,omitempty"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
-	Member common.Address `json:"member,omitempty"`     // 节点ZLTC地址
+	Type    uint8  `json:"memberType,omitempty"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
+	Address string `json:"member,omitempty"`     // 节点ZLTC地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
 }
 
 func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
