@@ -31,7 +31,7 @@ type NewSubChainRequest struct {
 	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
 	ContractPermission   bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
 	ChainByChainVote     uint8            `json:"chainByChainVote,omitempty"`     // 以链建链投票开关
-	ProposalExpireTime   uint             `json:"proposalExpireTime,omitempty"`   // 提案过期时间（天）
+	ProposalExpireTime   uint             `json:"ProposalExpireTime,omitempty"`   // 提案过期时间（天）
 	Desc                 string           `json:"desc,omitempty"`                 // 链描述
 	Extra                []byte           `json:"extra,omitempty"`                // 暂时不用的字段
 }
