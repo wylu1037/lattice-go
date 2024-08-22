@@ -176,7 +176,7 @@ func TestLattice_PreCallContract(t *testing.T) {
 	assert.NoError(t, err)
 	data, err := function.Encode()
 	assert.NoError(t, err)
-	receipt, err := latticeApi.PreCallContract(context.Background(), chainId, credentials.AccountAddress, "zltc_TpPbhQmKH8YoLF6aqLw77CiEoQxFL6SaM", data, constant.ZeroPayload)
+	receipt, err := latticeApi.PreCallContract(context.Background(), chainId, credentials.AccountAddress, "zltc_ebuyF9qei2hoESDzpFVM2cVFC9ViJXyNn", data, constant.ZeroPayload)
 	assert.Nil(t, err)
 	receiptBytes, _ := json.Marshal(receipt)
 	t.Log(string(receiptBytes))
@@ -211,7 +211,7 @@ func TestLattice_CallContract(t *testing.T) {
 }
 
 func TestLattice_JsonRpc(t *testing.T) {
-	info, err := latticeApi.HttpApi().GetNodeInfo(context.Background())
+	info, err := latticeApi.HttpApi().GetSubchain(context.Background(), "1001")
 	assert.NoError(t, err)
 	t.Log(info)
 }

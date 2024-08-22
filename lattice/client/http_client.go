@@ -283,6 +283,17 @@ type HttpApi interface {
 	//   - *types.NodeInfo,
 	//   - error
 	GetNodeInfo(ctx context.Context) (*types.NodeInfo, error)
+
+	// GetSubchain 获取子链的配置信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - subchainId string
+	//
+	// Returns:
+	//   - *types.Subchain
+	//   - error
+	GetSubchain(ctx context.Context, subchainId string) (*types.Subchain, error)
 }
 
 type httpApi struct {
@@ -516,6 +527,17 @@ func (api *httpApi) DownloadFile(_ context.Context, cid, filePath string) error 
 
 func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
 	response, err := Post[types.NodeInfo](api.Url, NewJsonRpcBody("node_nodeInfo"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetSubchain(_ context.Context, subchainId string) (*types.Subchain, error) {
+	response, err := Post[types.Subchain](api.Url, NewJsonRpcBody("latc_latcInfo"), api.newHeaders(subchainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
