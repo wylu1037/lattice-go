@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	SubChainWitnessMember   = iota // 见证身份的链成员
-	SubChainConsensusMember        // 共识身份的链成员
+	SubchainWitnessMember   = iota // 见证身份的链成员
+	SubchainConsensusMember        // 共识身份的链成员
 )
 
-// NewSubChainRequest 创建一个子链的请求结构体
-type NewSubChainRequest struct {
+// NewSubchainRequest 创建一个子链（通道）的请求结构体
+type NewSubchainRequest struct {
 	Consensus            uint8            `json:"consensus,omitempty"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
 	Tokenless            bool             `json:"tokenless,omitempty"`            // 是否有通证
 	GodAmount            *big.Int         `json:"godAmount,omitempty"`            // 盟主初始余额
@@ -28,7 +28,7 @@ type NewSubChainRequest struct {
 	ChannelId            *big.Int         `json:"chainId,omitempty"`              // 通道id
 	Preacher             string           `json:"preacher,omitempty"`             // 创世节点地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
 	BootStrap            string           `json:"bootStrap,omitempty"`            // 创世节点Inode
-	ChannelMemberGroup   []SubChainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
+	ChannelMemberGroup   []SubchainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
 	ContractPermission   bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
 	ChainByChainVote     uint8            `json:"chainByChainVote,omitempty"`     // 以链建链投票开关
 	ProposalExpireTime   uint             `json:"ProposalExpireTime,omitempty"`   // 提案过期时间（天）
@@ -36,12 +36,15 @@ type NewSubChainRequest struct {
 	Extra                []byte           `json:"extra,omitempty"`                // 暂时不用的字段
 }
 
-type SubChainMember struct {
-	Type    uint8  `json:"memberType,omitempty"` // 成员类型，0-见证、1-共识, SubChainWitnessMember or SubChainConsensusMember
-	Address string `json:"member,omitempty"`     // 节点ZLTC地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
+// SubchainMember 子链（通道）的成员
+//   - Type 成员类型，0-见证、1-共识, SubchainWitnessMember or SubchainConsensusMember
+//   - Address 节点ZLTC地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
+type SubchainMember struct {
+	Type    uint8  `json:"memberType,omitempty"`
+	Address string `json:"member,omitempty"`
 }
 
-func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
+func (req *NewSubchainRequest) ToCallContractParams() (string, error) {
 	bytes, err := json.Marshal(req)
 	if err != nil {
 		return "", err
@@ -49,8 +52,12 @@ func (req *NewSubChainRequest) ToCallContractParams() (string, error) {
 	return string(bytes), nil
 }
 
-// JoinSubChainRequest 加入子链请求
-type JoinSubChainRequest struct {
+// JoinSubchainRequest 加入子链请求
+//   - ChannelId 要加入的通道（子链）ID
+//   - NetworkId 要加入的通道（子链）所在的网络ID
+//   - NodeInfo 指定一个已经加入该链的节点地址
+//   - AccessMembers 指定要加入通道（子链）的节点地址
+type JoinSubchainRequest struct {
 	ChannelId     *big.Int         `json:"chainId,omitempty"`       // 待加入的链ID
 	NetworkId     uint64           `json:"networkId,omitempty"`     // 待加入的链的所在的网络ID
 	NodeInfo      string           `json:"nodeInfo,omitempty"`      // 指定一个已经加入该链的节点地址
@@ -71,7 +78,7 @@ type ChainBuildsChainContract interface {
 	//   - string: 合约地址，zltc_ZDfqCd4ZbBi4WA7uG4cGpFWRyTFqzyHUn
 	ContractAddress() string
 
-	// NewSubChain 创建子链
+	// NewSubchain 创建子链
 	//
 	// Parameters:
 	//   - req *NewSubChainRequest
@@ -79,9 +86,9 @@ type ChainBuildsChainContract interface {
 	// Returns:
 	//   - data string
 	//   - err error
-	NewSubChain(req *NewSubChainRequest) (data string, err error)
+	NewSubchain(req *NewSubchainRequest) (data string, err error)
 
-	// DeleteSubChain 删除子链
+	// DeleteSubchain 删除子链
 	//
 	// Parameters:
 	//   - SubChainId string: 子链id
@@ -89,9 +96,9 @@ type ChainBuildsChainContract interface {
 	// Returns:
 	//   - data string
 	//   - err error
-	DeleteSubChain(SubChainId string) (data string, err error)
+	DeleteSubchain(SubChainId string) (data string, err error)
 
-	// JoinSubChain 加入子链
+	// JoinSubchain 加入子链
 	//
 	// Parameters:
 	//   - req *JoinSubChainRequest
@@ -99,27 +106,27 @@ type ChainBuildsChainContract interface {
 	// Returns:
 	//   - data string
 	//   - err error
-	JoinSubChain(req *JoinSubChainRequest) (data string, err error)
+	JoinSubchain(req *JoinSubchainRequest) (data string, err error)
 
-	// StartSubChain 启动子链
+	// StartSubchain 启动子链
 	//
 	// Parameters:
-	//   - SubChainId string: 子链id
+	//   - subchainId string: 子链id
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	StartSubChain(SubChainId string) (data string, err error)
+	StartSubchain(subchainId string) (data string, err error)
 
-	// StopSubChain 停止子链
+	// StopSubchain 停止子链
 	//
 	// Parameters:
-	//   - SubChainId string: 子链id
+	//   - subchainId string: 子链id
 	//
 	// Returns:
 	//   - data string
 	//   - err error
-	StopSubChain(SubChainId string) (data string, err error)
+	StopSubchain(subchainId string) (data string, err error)
 }
 
 type chainBuildsChainContract struct {
@@ -130,7 +137,7 @@ func (c *chainBuildsChainContract) ContractAddress() string {
 	return ChainBuildsChainBuiltinContract.Address
 }
 
-func (c *chainBuildsChainContract) NewSubChain(req *NewSubChainRequest) (data string, err error) {
+func (c *chainBuildsChainContract) NewSubchain(req *NewSubchainRequest) (data string, err error) {
 	args, err := req.ToCallContractParams()
 	if err != nil {
 		return "", err
@@ -142,15 +149,15 @@ func (c *chainBuildsChainContract) NewSubChain(req *NewSubChainRequest) (data st
 	return hexutil.Encode(code), nil
 }
 
-func (c *chainBuildsChainContract) DeleteSubChain(ChannelId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("delChain", ChannelId)
+func (c *chainBuildsChainContract) DeleteSubchain(subchainId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("delChain", subchainId)
 	if err != nil {
 		return "", err
 	}
 	return fn.Encode()
 }
 
-func (c *chainBuildsChainContract) JoinSubChain(req *JoinSubChainRequest) (data string, err error) {
+func (c *chainBuildsChainContract) JoinSubchain(req *JoinSubchainRequest) (data string, err error) {
 	code, err := c.abi.MyAbi().Pack("oldChain", req.ChannelId, req.NetworkId, req.NodeInfo, req.AccessMembers)
 	if err != nil {
 		return "", err
@@ -158,16 +165,16 @@ func (c *chainBuildsChainContract) JoinSubChain(req *JoinSubChainRequest) (data 
 	return hexutil.Encode(code), nil
 }
 
-func (c *chainBuildsChainContract) StartSubChain(ChannelId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("startChain", ChannelId)
+func (c *chainBuildsChainContract) StartSubchain(subchainId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("startChain", subchainId)
 	if err != nil {
 		return "", err
 	}
 	return fn.Encode()
 }
 
-func (c *chainBuildsChainContract) StopSubChain(ChannelId string) (data string, err error) {
-	fn, err := c.abi.GetLatticeFunction("stopChain", ChannelId)
+func (c *chainBuildsChainContract) StopSubchain(subchainId string) (data string, err error) {
+	fn, err := c.abi.GetLatticeFunction("stopChain", subchainId)
 	if err != nil {
 		return "", err
 	}

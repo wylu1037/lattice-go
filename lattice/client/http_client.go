@@ -295,7 +295,7 @@ type HttpApi interface {
 	//   - error
 	GetSubchain(ctx context.Context, subchainId string) (*types.Subchain, error)
 
-	// GetCreatedSubChain 	获取所有通道
+	// GetCreatedSubchain 获取所有通道
 	//
 	// Parameters:
 	// 	 - ctx context.Context
@@ -303,9 +303,9 @@ type HttpApi interface {
 	// Returns:
 	//   - []string
 	//   - error
-	GetCreatedSubChain(ctx context.Context) (*[]uint64, error)
+	GetCreatedSubchain(ctx context.Context) ([]uint64, error)
 
-	// GetJoinedSubChain 	获取已加入通道
+	// GetJoinedSubchain 获取已加入通道
 	//
 	// Parameters:
 	// 	 - ctx context.Context
@@ -313,7 +313,7 @@ type HttpApi interface {
 	// Returns:
 	//   - []string
 	//   - error
-	GetJoinedSubChain(ctx context.Context) (*[]uint64, error)
+	GetJoinedSubchain(ctx context.Context) ([]uint64, error)
 }
 
 type httpApi struct {
@@ -382,7 +382,7 @@ func (api *httpApi) SendSignedTransaction(_ context.Context, chainId string, sig
 	return response.Result, nil
 }
 
-func (api *httpApi) PreCallContract(ctx context.Context, chainId string, unsignedTX *block.Transaction) (*types.Receipt, error) {
+func (api *httpApi) PreCallContract(_ context.Context, chainId string, unsignedTX *block.Transaction) (*types.Receipt, error) {
 	response, err := Post[types.Receipt](api.Url, NewJsonRpcBody("wallet_preExecuteContract", unsignedTX), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
@@ -567,7 +567,7 @@ func (api *httpApi) GetSubchain(_ context.Context, subchainId string) (*types.Su
 	return response.Result, nil
 }
 
-func (api *httpApi) GetCreatedSubChain(_ context.Context) (*[]uint64, error) {
+func (api *httpApi) GetCreatedSubchain(_ context.Context) ([]uint64, error) {
 	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("cbyc_getCreatedAllChains"), api.newHeaders(emptyChainId), api.transport)
 	if err != nil {
 		return nil, err
@@ -575,10 +575,10 @@ func (api *httpApi) GetCreatedSubChain(_ context.Context) (*[]uint64, error) {
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return response.Result, nil
+	return *response.Result, nil
 }
 
-func (api *httpApi) GetJoinedSubChain(_ context.Context) (*[]uint64, error) {
+func (api *httpApi) GetJoinedSubchain(_ context.Context) ([]uint64, error) {
 	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("node_getAllChainId"), api.newHeaders(emptyChainId), api.transport)
 	if err != nil {
 		return nil, err
@@ -586,7 +586,7 @@ func (api *httpApi) GetJoinedSubChain(_ context.Context) (*[]uint64, error) {
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return response.Result, nil
+	return *response.Result, nil
 }
 
 // Post send http request use post method

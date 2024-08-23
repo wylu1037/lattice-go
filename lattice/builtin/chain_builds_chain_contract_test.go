@@ -10,14 +10,14 @@ import (
 
 func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	mem := make([]SubChainMember, 1)
+	mem := make([]SubchainMember, 1)
 	for i := 0; i < len(mem); i++ {
-		mem[i] = SubChainMember{
+		mem[i] = SubchainMember{
 			Type:    1,
 			Address: "zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D",
 		}
 	}
-	data, err := contract.NewSubChain(&NewSubChainRequest{
+	data, err := contract.NewSubchain(&NewSubchainRequest{
 		ChannelId:            big.NewInt(101),
 		ChannelName:          "channel101",
 		Desc:                 "channel",
@@ -44,7 +44,7 @@ func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 
 func TestChainBuildsChainContract_StartSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.StartSubChain("101")
+	data, err := contract.StartSubchain("101")
 	assert.NoError(t, err)
 	expectData := "0x7b777ddf0000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
@@ -53,7 +53,7 @@ func TestChainBuildsChainContract_StartSubChain(t *testing.T) {
 
 func TestChainBuildsChainContract_StopSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.StopSubChain("101")
+	data, err := contract.StopSubchain("101")
 	assert.NoError(t, err)
 	expectData := "0x27c9d3c80000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
@@ -61,7 +61,7 @@ func TestChainBuildsChainContract_StopSubChain(t *testing.T) {
 
 func TestChainBuildsChainContract_DeleteSubChain(t *testing.T) {
 	contract := NewChainBuildsChainContract()
-	data, err := contract.DeleteSubChain("101")
+	data, err := contract.DeleteSubchain("101")
 	assert.NoError(t, err)
 	expectData := "0x34084eb10000000000000000000000000000000000000000000000000000000000000065"
 	assert.Equal(t, expectData, data)
@@ -73,7 +73,7 @@ func TestChainBuildsChainContract_JoinSubChain(t *testing.T) {
 	for i := 0; i < len(mem); i++ {
 		mem[i], _ = convert.ZltcToAddress("zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi")
 	}
-	data, err := contract.JoinSubChain(&JoinSubChainRequest{
+	data, err := contract.JoinSubchain(&JoinSubchainRequest{
 		ChannelId:     big.NewInt(101),
 		NetworkId:     101,
 		NodeInfo:      "zltc_YBomBNykwMqxm719giBL3VtYV4ABT9a8D",
