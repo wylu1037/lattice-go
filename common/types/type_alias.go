@@ -8,8 +8,8 @@ package types
 type Fee string
 
 // VotingRule 投票规则类型
-//   - VotingRuleNO 不需要投票
-//   - VotingRuleLEADER 盟主一票制
+//   - VotingRuleNO        不需要投票
+//   - VotingRuleLEADER    盟主一票制
 //   - VotingRuleCONSENSUS 共识投票
 type VotingRule uint8
 
@@ -20,7 +20,7 @@ const (
 )
 
 // Consensus 共识类型
-//   - ConsensusPOA poa共识
+//   - ConsensusPOA  poa共识
 //   - ConsensusPBFT pbft共识
 //   - ConsensusRAFT raft共识
 type Consensus string
@@ -29,4 +29,18 @@ const (
 	ConsensusPOA  Consensus = "POA"
 	ConsensusPBFT Consensus = "PBFT"
 	ConsensusRAFT Consensus = "RAFT"
+)
+
+// NodeType 节点类型
+//   - NodeTypeGENESIS   创世节点
+//   - NodeTypeCONSENSUS 共识节点
+//   - NodeTypeWITNESS   见证节点
+//   - NodeTypeUNKNOWN   未知节点
+type NodeType uint8
+
+const (
+	NodeTypeGENESIS   NodeType = 0
+	NodeTypeCONSENSUS NodeType = 1
+	NodeTypeWITNESS   NodeType = 2
+	NodeTypeUNKNOWN   NodeType = 3
 )
