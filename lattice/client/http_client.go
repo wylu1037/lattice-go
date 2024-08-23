@@ -294,6 +294,26 @@ type HttpApi interface {
 	//   - *types.Subchain
 	//   - error
 	GetSubchain(ctx context.Context, subchainId string) (*types.Subchain, error)
+
+	// GetCreatedSubChain 	获取所有通道
+	//
+	// Parameters:
+	// 	 - ctx context.Context
+	//
+	// Returns:
+	//   - []string
+	//   - error
+	GetCreatedSubChain(ctx context.Context) (*[]uint64, error)
+
+	// GetJoinedSubChain 	获取已加入通道
+	//
+	// Parameters:
+	// 	 - ctx context.Context
+	//
+	// Returns:
+	//   - []string
+	//   - error
+	GetJoinedSubChain(ctx context.Context) (*[]uint64, error)
 }
 
 type httpApi struct {
@@ -538,6 +558,28 @@ func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
 
 func (api *httpApi) GetSubchain(_ context.Context, subchainId string) (*types.Subchain, error) {
 	response, err := Post[types.Subchain](api.Url, NewJsonRpcBody("latc_latcInfo"), api.newHeaders(subchainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetCreatedSubChain(_ context.Context) (*[]uint64, error) {
+	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("cbyc_getCreatedAllChains"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetJoinedSubChain(_ context.Context) (*[]uint64, error) {
+	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("node_AllChainId"), api.newHeaders(emptyChainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
