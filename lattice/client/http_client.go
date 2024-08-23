@@ -579,7 +579,7 @@ func (api *httpApi) GetCreatedSubChain(_ context.Context) (*[]uint64, error) {
 }
 
 func (api *httpApi) GetJoinedSubChain(_ context.Context) (*[]uint64, error) {
-	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("node_AllChainId"), api.newHeaders(emptyChainId), api.transport)
+	response, err := Post[[]uint64](api.Url, NewJsonRpcBody("node_getAllChainId"), api.newHeaders(emptyChainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
