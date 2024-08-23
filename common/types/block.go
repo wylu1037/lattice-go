@@ -14,3 +14,12 @@ type LatestBlock struct {
 func (b *LatestBlock) IncrHeight() {
 	b.Height++
 }
+
+// DaemonBlock 守护区块
+type DaemonBlock struct {
+	Hash       string `json:"hash"`
+	ParentHash string `json:"parentHash"`
+	Height     uint64 `json:"number"`
+	Timestamp  uint64 `json:"timestamp"`
+	Size       uint32 `json:"size"`
+}

@@ -343,6 +343,28 @@ type HttpApi interface {
 	//   - string
 	//   - error
 	GetGenesisNodeAddress(ctx context.Context, chainID string) (string, error)
+
+	// GetLatestDaemonBlock 获取最新的守护区块信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//
+	// Returns:
+	//   - *types.DaemonBlock
+	//   - error
+	GetLatestDaemonBlock(ctx context.Context, chainID string) (*types.DaemonBlock, error)
+
+	// GetNodePeers 获取节点的对等节点信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//
+	// Returns:
+	//   - []*types.NodePeer
+	//   - error
+	GetNodePeers(ctx context.Context, chainID string) ([]*types.NodePeer, error)
 }
 
 type httpApi struct {
@@ -450,8 +472,8 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 	return *response.Result, nil
 }
 
-func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
-	response, err := Post[types.NodeInfo](api.Url, NewJsonRpcBody("node_nodeInfo"), api.newHeaders(emptyChainId), api.transport)
+func (api *httpApi) GetLatestDaemonBlock(_ context.Context, chainID string) (*types.DaemonBlock, error) {
+	response, err := Post[types.DaemonBlock](api.Url, NewJsonRpcBody("latc_getCurrentDBlock"), api.newHeaders(chainID), api.transport)
 	if err != nil {
 		return nil, err
 	}

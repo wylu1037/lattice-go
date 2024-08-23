@@ -116,3 +116,25 @@ type ConsensusNodeStatus struct {
 	ShouldWitnessedBlockCount  uint64 `json:"ShouldSignatureCount,omitempty"`
 	Online                     bool   `json:"online,omitempty"`
 }
+
+// NodePeer peer
+type NodePeer struct {
+	INode     string            `json:"inode"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Caps      []string          `json:"caps"`
+	Network   NodePeerNetwork   `json:"network"`
+	Protocols NodePeerProtocols `json:"protocols"`
+}
+
+type NodePeerNetwork struct {
+	LocalAddress  string `json:"localAddress"`
+	RemoteAddress string `json:"remoteAddress"`
+	Inbound       bool   `json:"inbound"`
+	Trusted       bool   `json:"trusted"`
+	Static        bool   `json:"static"`
+}
+
+type NodePeerProtocols struct {
+	Latc string `json:"latc"`
+}
