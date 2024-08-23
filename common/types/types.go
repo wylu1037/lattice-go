@@ -103,3 +103,16 @@ type Subchain struct {
 	ProposalExpirationDays        uint       `json:"ProposalExpireTime,omitempty"`
 	ConfigurationModifyVotingRule VotingRule `json:"configModifyRule,omitempty"`
 }
+
+// ConsensusNodeStatus 共识节点的状态
+//   - Address						   节点地址
+//   - WitnessedBlockCount             见证区块数量
+//   - FailureWitnessedBlockCount 	   见证失败的区块数量
+//   - ShouldWitnessedBlockCount	   应当见证的区块数量
+type ConsensusNodeStatus struct {
+	Address                    string `json:"Addr,omitempty"`
+	WitnessedBlockCount        uint64 `json:"SignatureCount,omitempty"`
+	FailureWitnessedBlockCount uint64 `json:"SignatureFailCount,omitempty"`
+	ShouldWitnessedBlockCount  uint64 `json:"ShouldSignatureCount,omitempty"`
+	Online                     bool   `json:"online,omitempty"`
+}

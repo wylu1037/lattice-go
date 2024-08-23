@@ -321,6 +321,17 @@ type HttpApi interface {
 	//   - *types.SubchainRunningStatus
 	//   - error
 	GetSubchainRunningStatus(ctx context.Context, subchainID string) (*types.SubchainRunningStatus, error)
+
+	// GetConsensusNodesStatus 查询共识节点的状态
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//
+	// Returns:
+	//   - []*types.ConsensusNodeStatus
+	//   - error
+	GetConsensusNodesStatus(ctx context.Context, chainID string) ([]*types.ConsensusNodeStatus, error)
 }
 
 type httpApi struct {
