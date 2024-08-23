@@ -332,6 +332,17 @@ type HttpApi interface {
 	//   - []*types.ConsensusNodeStatus
 	//   - error
 	GetConsensusNodesStatus(ctx context.Context, chainID string) ([]*types.ConsensusNodeStatus, error)
+
+	// GetGenesisNodeAddress 获取共识节点地址
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//
+	// Returns:
+	//   - string
+	//   - error
+	GetGenesisNodeAddress(ctx context.Context, chainID string) (string, error)
 }
 
 type httpApi struct {

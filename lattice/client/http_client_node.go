@@ -15,3 +15,14 @@ func (api *httpApi) GetConsensusNodesStatus(_ context.Context, chainID string) (
 	}
 	return *response.Result, nil
 }
+
+func (api *httpApi) GetGenesisNodeAddress(ctx context.Context, chainID string) (string, error) {
+	response, err := Post[string](api.Url, NewJsonRpcBody("wallet_getGenesisNode"), api.newHeaders(chainID), api.transport)
+	if err != nil {
+		return "", err
+	}
+	if response.Error != nil {
+		return "", response.Error.Error()
+	}
+	return *response.Result, nil
+}
