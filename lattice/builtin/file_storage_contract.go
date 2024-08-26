@@ -69,7 +69,7 @@ type fileStorageContract struct {
 }
 
 func (c *fileStorageContract) MyAbi() *myabi.ABI {
-	return c.abi.MyAbi()
+	return c.abi.RawAbi()
 }
 
 func (c *fileStorageContract) ContractAddress() string {

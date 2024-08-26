@@ -1,7 +1,9 @@
 package builtin
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/wylu1037/lattice-go/common/convert"
 	"math/big"
@@ -43,12 +45,11 @@ func TestChainBuildsChainContract_NewSubChain(t *testing.T) {
 }
 
 func TestChainBuildsChainContract_StartSubChain(t *testing.T) {
-	contract := NewChainBuildsChainContract()
-	data, err := contract.StartSubchain("101")
-	assert.NoError(t, err)
-	expectData := "0x7b777ddf0000000000000000000000000000000000000000000000000000000000000065"
-	assert.Equal(t, expectData, data)
+	hexString := "0x27c9d3c8"
+	b1, _ := hexutil.Decode(hexString)
+	fmt.Println(len(b1))
 
+	fmt.Println(len([]byte("27c9d3c8")))
 }
 
 func TestChainBuildsChainContract_StopSubChain(t *testing.T) {

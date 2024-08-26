@@ -33,6 +33,11 @@ func NewLatticeFunction(
 }
 
 type LatticeFunction interface {
+	// Encode 编码合约的参数
+	//
+	// Returns:
+	//   - string: 编码输出的code
+	//   - error
 	Encode() (string, error)
 }
 
@@ -64,7 +69,7 @@ func (f *latticeFunction) Encode() (string, error) {
 		}
 		m, ok := contract.Methods[f.methodName]
 		if !ok {
-			return "", errors.New(fmt.Sprintf("no such method: %s", f.methodName))
+			return "", errors.New(fmt.Sprintf("合约方法【%s】不存在", f.methodName))
 		}
 		if data, err = m.EncodeArgs(convertedArgs...); err != nil {
 			return "", err

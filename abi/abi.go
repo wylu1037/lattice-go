@@ -16,8 +16,28 @@ func NewAbi(abiString string) LatticeAbi {
 }
 
 type LatticeAbi interface {
-	MyAbi() *abi.ABI
+
+	// RawAbi 获取RawABI
+	RawAbi() *abi.ABI
+
+	// Constructor 获取构造函数
+	//
+	// Returns:
+	//   - *abi.Method
+	Constructor() *abi.Method
+
+	// Function 获取方法
+	//
+	// Parameters:
+	//   - method string: 方法名称
+	//
+	// Returns:
+	//   - *abi.Method
+	//   - error: 方法不存在时，抛出错误
 	Function(method string) (*abi.Method, error)
+
+	GetConstructor(args ...interface{}) LatticeFunction
+
 	GetLatticeFunction(methodName string, args ...interface{}) (LatticeFunction, error)
 }
 
@@ -36,7 +56,7 @@ func FromJson(abiString string) *abi.ABI {
 	return &myAbi
 }
 
-func (i *latticeAbi) MyAbi() *abi.ABI {
+func (i *latticeAbi) RawAbi() *abi.ABI {
 	return i.abi
 }
 
@@ -44,12 +64,16 @@ func (i *latticeAbi) Function(methodName string) (*abi.Method, error) {
 	if m, ok := i.abi.Methods[methodName]; ok {
 		return &m, nil
 	} else {
-		return nil, fmt.Errorf("method %s not found", methodName)
+		return nil, fmt.Errorf("合约方法【%s】不存在", methodName)
 	}
 }
 
 func (i *latticeAbi) Constructor() *abi.Method {
 	return &i.abi.Constructor
+}
+
+func (i *latticeAbi) GetConstructor(args ...interface{}) LatticeFunction {
+	return NewLatticeFunction(i.abiString, i.abi, "", args, i.Constructor())
 }
 
 func (i *latticeAbi) GetLatticeFunction(methodName string, args ...interface{}) (LatticeFunction, error) {

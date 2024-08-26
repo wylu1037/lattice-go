@@ -159,7 +159,7 @@ type credibilityContract struct {
 }
 
 func (c *credibilityContract) MyAbi() *myabi.ABI {
-	return c.abi.MyAbi()
+	return c.abi.RawAbi()
 }
 
 func (c *credibilityContract) ContractAddress() string {
@@ -184,7 +184,7 @@ func (c *credibilityContract) CreateProtocol(tradeNumber uint64, message []byte)
 }
 
 func (c *credibilityContract) BatchCreateProtocol(request []CreateProtocolRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("addProtocolBatch", request)
+	code, err := c.abi.RawAbi().Pack("addProtocolBatch", request)
 	if err != nil {
 		return "", err
 	}
@@ -211,7 +211,7 @@ func (c *credibilityContract) UpdateProtocol(uri uint64, message []byte) (data s
 }
 
 func (c *credibilityContract) BatchUpdateProtocol(request []UpdateProtocolRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("updateProtocolBatch", request)
+	code, err := c.abi.RawAbi().Pack("updateProtocolBatch", request)
 	if err != nil {
 		return "", err
 	}
@@ -220,7 +220,7 @@ func (c *credibilityContract) BatchUpdateProtocol(request []UpdateProtocolReques
 }
 
 func (c *credibilityContract) Write(request *WriteLedgerRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("writeTraceability", request.ProtocolUri, request.Hash, request.Data, request.Address)
+	code, err := c.abi.RawAbi().Pack("writeTraceability", request.ProtocolUri, request.Hash, request.Data, request.Address)
 	if err != nil {
 		return "", err
 	}
@@ -229,7 +229,7 @@ func (c *credibilityContract) Write(request *WriteLedgerRequest) (data string, e
 }
 
 func (c *credibilityContract) BatchWrite(request []WriteLedgerRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("writeTraceabilityBatch", request)
+	code, err := c.abi.RawAbi().Pack("writeTraceabilityBatch", request)
 	if err != nil {
 		return "", err
 	}

@@ -142,7 +142,7 @@ func (c *chainBuildsChainContract) NewSubchain(req *NewSubchainRequest) (data st
 	if err != nil {
 		return "", err
 	}
-	code, err := c.abi.MyAbi().Pack("newChain", args)
+	code, err := c.abi.RawAbi().Pack("newChain", args)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +158,7 @@ func (c *chainBuildsChainContract) DeleteSubchain(subchainId string) (data strin
 }
 
 func (c *chainBuildsChainContract) JoinSubchain(req *JoinSubchainRequest) (data string, err error) {
-	code, err := c.abi.MyAbi().Pack("oldChain", req.ChannelId, req.NetworkId, req.NodeInfo, req.AccessMembers)
+	code, err := c.abi.RawAbi().Pack("oldChain", req.ChannelId, req.NetworkId, req.NodeInfo, req.AccessMembers)
 	if err != nil {
 		return "", err
 	}
