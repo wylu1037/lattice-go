@@ -48,3 +48,14 @@ func (api *httpApi) GetNodePeers(_ context.Context, chainID string) ([]*types.No
 	}
 	return *response.Result, nil
 }
+
+func (api *httpApi) GetNodeConfig(_ context.Context, chainID string) (*types.NodeConfig, error) {
+	response, err := Post[*types.NodeConfig](api.Url, NewJsonRpcBody("latc_getConfig"), api.newHeaders(chainID), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return *response.Result, nil
+}

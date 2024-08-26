@@ -365,6 +365,17 @@ type HttpApi interface {
 	//   - []*types.NodePeer
 	//   - error
 	GetNodePeers(ctx context.Context, chainID string) ([]*types.NodePeer, error)
+
+	// GetNodeConfig 查询节点的配置信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//
+	// Returns:
+	//   - *types.NodeConfig
+	//   - error
+	GetNodeConfig(ctx context.Context, chainID string) (*types.NodeConfig, error)
 }
 
 type httpApi struct {

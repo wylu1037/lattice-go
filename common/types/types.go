@@ -138,3 +138,24 @@ type NodePeerNetwork struct {
 type NodePeerProtocols struct {
 	Latc string `json:"latc"`
 }
+
+// NodeConfig 节点配置信息
+type NodeConfig struct {
+	Lattice struct {
+		NetworkIDGroup []int `json:"networkIDGroup"`
+	} `json:"latc"`
+
+	Node struct {
+		Name         string   `json:"name"`
+		DataDir      string   `json:"dataDir"`
+		SecondaryDir string   `json:"secondaryDir"`
+		Host         string   `json:"Host"`
+		HTTPPort     int      `json:"HTTPPort"`
+		WSPort       int      `json:"WSPort"`
+		P2PPort      int      `json:"P2PPort"`
+		GinHTTPPort  int      `json:"GinHTTPPort"`
+		JWTEnable    bool     `json:"JWTEnable"`
+		JWTSecret    string   `json:"JWTSecret"`
+		Bootstrap    []string `json:"bootstrap"`
+	}
+}
