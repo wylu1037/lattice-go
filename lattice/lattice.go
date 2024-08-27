@@ -411,6 +411,38 @@ type Lattice interface {
 	//   - *types.Receipt: 交易回执
 	//   - error: 预执行的错误
 	PreCallContract(ctx context.Context, chainId, owner, contractAddress, data, payload string) (*types.Receipt, error)
+
+	// UpgradeContract 发起升级合约交易
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string: 链ID
+	//   - contractAddress string: 要升级的合约地址
+	//   - data string: 升级的合约代码
+	//   - payload string: 交易备注
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - error
+	UpgradeContract(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error)
+
+	// UpgradeContractWaitReceipt 发起升级合约交易并等待回执
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - credentials *Credentials: 发交易的身份凭证
+	//   - chainId string: 链ID
+	//   - contractAddress string: 要升级的合约地址
+	//   - data string：升级的合约代码
+	//   - payload string: 交易备注
+	//   - retryStrategy *RetryStrategy: 等待回执策略
+	//
+	// Returns:
+	//   - *common.Hash: 交易哈希
+	//   - *types.Receipt: 回执
+	//   - error
+	UpgradeContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
@@ -653,4 +685,69 @@ func (svc *lattice) PreCallContract(ctx context.Context, chainId, owner, contrac
 	}
 	log.Debug().Msgf("结束预调用合约，回执为：%+v", receipt)
 	return receipt, nil
+}
+
+func (svc *lattice) UpgradeContract(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起升级合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", chainId, contractAddress, data, payload, amount, joule)
+
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	transaction := block.NewTransactionBuilder(block.TransactionTypeUpgradeContract).
+		SetLatestBlock(latestBlock).
+		SetOwner(credentials.AccountAddress).
+		SetLinker(contractAddress).
+		SetCode(data).
+		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
+		Build()
+
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
+	transaction.CodeHash = dataHash
+
+	chainIdAsInt, err := strconv.Atoi(chainId)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	sk, err := credentials.GetSK()
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+
+	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	} else {
+		latestBlock.Hash = *hash
+		latestBlock.IncrHeight()
+		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
+			log.Error().Err(err)
+		}
+	}
+	log.Debug().Msgf("结束升级合约，哈希为：%s", hash.String())
+	return hash, nil
+}
+
+func (svc *lattice) UpgradeContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.UpgradeContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
 }
