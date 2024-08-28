@@ -159,3 +159,22 @@ type NodeConfig struct {
 		Bootstrap    []string `json:"bootstrap"`
 	}
 }
+
+// ContractInformation 合约信息
+//
+//   - ContractAddress 合约地址
+//   - Owner           合约的部署者地址
+//   - State           合约的状态
+//   - Version         合约的版本
+//   - ProposalId      合约的提案ID，包括 部署、升级、吊销
+//   - CreatedAt       合约的部署时间
+//   - UpdatedAt       合约的修改时间
+type ContractInformation struct {
+	ContractAddress string        `json:"address"`
+	Owner           string        `json:"deploymentAddress"`
+	State           ContractState `json:"state"`
+	Version         uint8         `json:"version"`
+	ProposalId      string        `json:"votingProposalId,omitempty"`
+	CreatedAt       uint64        `json:"createAt"`
+	UpdatedAt       uint64        `json:"modifiedAt"`
+}

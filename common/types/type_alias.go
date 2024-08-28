@@ -14,9 +14,9 @@ type Fee string
 type VotingRule uint8
 
 const (
-	VotingRuleNO        VotingRule = 0
-	VotingRuleLEADER    VotingRule = 1
-	VotingRuleCONSENSUS VotingRule = 2
+	VotingRuleNO VotingRule = iota
+	VotingRuleLEADER
+	VotingRuleCONSENSUS
 )
 
 // Consensus 共识类型
@@ -39,8 +39,20 @@ const (
 type NodeType uint8
 
 const (
-	NodeTypeGENESIS   NodeType = 0
-	NodeTypeCONSENSUS NodeType = 1
-	NodeTypeWITNESS   NodeType = 2
-	NodeTypeUNKNOWN   NodeType = 3
+	NodeTypeGENESIS NodeType = iota
+	NodeTypeCONSENSUS
+	NodeTypeWITNESS
+	NodeTypeUNKNOWN
+)
+
+// ContractState 合约状态
+//   - ContractStatePROHIBITED  禁止执行合约
+//   - ContractStateALLOWABLE   允许执行合约
+//   - ContractStateUNAVAILABLE 合约不可调用，处于冻结状态
+type ContractState uint8
+
+const (
+	ContractStatePROHIBITED ContractState = iota
+	ContractStateALLOWABLE
+	ContractStateUNAVAILABLE
 )

@@ -376,6 +376,8 @@ type HttpApi interface {
 	//   - *types.NodeConfig
 	//   - error
 	GetNodeConfig(ctx context.Context, chainID string) (*types.NodeConfig, error)
+
+	GetContractInformation(ctx context.Context, chainID, contractAddress string) (*types.ContractInformation, error)
 }
 
 type httpApi struct {
