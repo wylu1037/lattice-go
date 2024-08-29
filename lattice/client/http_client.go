@@ -430,6 +430,18 @@ type HttpApi interface {
 	//   - *types.ContractInformation
 	//   - error
 	GetContractInformation(ctx context.Context, chainID, contractAddress string) (*types.ContractInformation, error)
+
+	// GetContractManagement 获取合约管理信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string: 合约所在链的ID
+	//   - contractAddress string: 合约地址
+	//
+	// Returns:
+	//   - *types.ContractManagement
+	//   - error
+	GetContractManagement(ctx context.Context, chainID, contractAddress string) (*types.ContractManagement, error)
 }
 
 type httpApi struct {

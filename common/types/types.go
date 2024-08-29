@@ -178,3 +178,18 @@ type ContractInformation struct {
 	CreatedAt       uint64        `json:"createAt"`
 	UpdatedAt       uint64        `json:"modifiedAt"`
 }
+
+// ContractManagement 合约管理信息
+//
+//   - Mode           合约管理模式，白名单 or 黑名单
+//   - Threshold      投票通过的阈值，大于10则按照权重加和，小于等于10则按照百分比
+//   - Whitelist	  合约白名单
+//   - Blacklist	  合约黑名单
+//   - Administrators 合约管理员：`{"zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi": 10}`
+type ContractManagement struct {
+	Mode           ContractManagementMode `json:"permissionMode"`
+	Threshold      uint64                 `json:"threshold"`
+	Whitelist      []string               `json:"whiteList"`
+	Blacklist      []string               `json:"blackList"`
+	Administrators map[string]uint8       `json:"managerList"`
+}

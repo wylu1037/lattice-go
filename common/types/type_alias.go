@@ -56,3 +56,13 @@ const (
 	ContractStateALLOWABLE
 	ContractStateUNAVAILABLE
 )
+
+// ContractManagementMode 合约管理模式
+//   - ContractManagementModeWHITELIST 白名单模式
+//   - ContractManagementModeBLACKLIST 黑名单模式
+type ContractManagementMode uint8
+
+const (
+	ContractManagementModeWHITELIST ContractManagementMode = iota
+	ContractManagementModeBLACKLIST
+)
