@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/wylu1037/lattice-go/abi"
+	"github.com/wylu1037/lattice-go/common/types"
 	"math/big"
 )
 
@@ -15,25 +16,26 @@ const (
 
 // NewSubchainRequest 创建一个子链（通道）的请求结构体
 type NewSubchainRequest struct {
-	Consensus            uint8            `json:"consensus,omitempty"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
-	Tokenless            bool             `json:"tokenless,omitempty"`            // 是否有通证
-	GodAmount            *big.Int         `json:"godAmount,omitempty"`            // 盟主初始余额
-	Period               uint64           `json:"period,omitempty"`               // 出块间隔
-	NoEmptyAnchor        bool             `json:"noEmptyAnchor,omitempty"`        // 不允许无交易时快速出空块
-	EmptyAnchorPeriodMul uint64           `json:"emptyAnchorPeriodMul,omitempty"` // 空块等待次数
-	IsContractVote       bool             `json:"isContractVote,omitempty"`       // 开启合约生命周期
-	IsDictatorship       bool             `json:"isDictatorship,omitempty"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
-	DeployRule           uint8            `json:"deployRule,omitempty"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
-	ChannelName          string           `json:"name,omitempty"`                 // 通道名称
-	ChannelId            *big.Int         `json:"chainId,omitempty"`              // 通道id
-	Preacher             string           `json:"preacher,omitempty"`             // 创世节点地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
-	BootStrap            string           `json:"bootStrap,omitempty"`            // 创世节点Inode
-	ChannelMemberGroup   []SubchainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
-	ContractPermission   bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
-	ChainByChainVote     uint8            `json:"chainByChainVote,omitempty"`     // 以链建链投票开关
-	ProposalExpireTime   uint             `json:"ProposalExpireTime,omitempty"`   // 提案过期时间（天）
-	Desc                 string           `json:"desc,omitempty"`                 // 链描述
-	Extra                []byte           `json:"extra,omitempty"`                // 暂时不用的字段
+	Consensus                     uint8            `json:"consensus,omitempty"`            // 0:继承主链1: poa 2:pbft 3:raft 默认
+	Tokenless                     bool             `json:"tokenless,omitempty"`            // 是否有通证
+	GodAmount                     *big.Int         `json:"godAmount,omitempty"`            // 盟主初始余额
+	Period                        uint64           `json:"period,omitempty"`               // 出块间隔
+	NoEmptyAnchor                 bool             `json:"noEmptyAnchor,omitempty"`        // 不允许无交易时快速出空块
+	EmptyAnchorPeriodMul          uint64           `json:"emptyAnchorPeriodMul,omitempty"` // 空块等待次数
+	EnableContractLifecycle       bool             `json:"isContractVote,omitempty"`       // 开启合约生命周期
+	EnableVotingDictatorship      bool             `json:"isDictatorship,omitempty"`       // 开启盟主独裁(生命周期规则: 盟主投票, 共识投票)
+	ContractDeploymentVotingRule  types.VotingRule `json:"deployRule,omitempty"`           // 合约部署规则(无需投票, 盟主投票, 共识投票)
+	ChannelName                   string           `json:"name,omitempty"`                 // 通道名称
+	ChannelId                     *big.Int         `json:"chainId,omitempty"`              // 通道id
+	Preacher                      string           `json:"preacher,omitempty"`             // 创世节点地址，示例：zltc_Z1pnS94bP4hQSYLs4aP4UwBP9pH8bEvhi
+	BootStrap                     string           `json:"bootStrap,omitempty"`            // 创世节点Inode
+	ChannelMemberGroup            []SubchainMember `json:"chainMemberGroup,omitempty"`     // 加入通道的成员
+	ContractPermission            bool             `json:"contractPermission,omitempty"`   // 合约内部管理开关
+	ChainByChainVotingRule        types.VotingRule `json:"chainByChainVote,omitempty"`     // 以链建链投票开关
+	ProposalExpirationDays        uint             `json:"ProposalExpireTime,omitempty"`   // 提案过期时间（天）
+	Desc                          string           `json:"desc,omitempty"`                 // 链描述
+	Extra                         []byte           `json:"extra,omitempty"`                // 暂时不用的字段
+	ConfigurationModifyVotingRule types.VotingRule `json:"configModifyRule,omitempty" `    // 子链的配置修改规则
 }
 
 // SubchainMember 子链（通道）的成员
