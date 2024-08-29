@@ -52,3 +52,47 @@ func (api *httpApi) GetSubchainRunningStatus(_ context.Context, subchainID strin
 		Running: status == types.SubchainStatusRUNNING,
 	}, nil
 }
+
+func (api *httpApi) JoinSubchain(_ context.Context, subchainId, networkId uint64, inode string) error {
+	response, err := Post[any](api.Url, NewJsonRpcBody("cbyc_selfJoinChain", subchainId, networkId, inode), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return err
+	}
+	if response.Error != nil {
+		return response.Error.Error()
+	}
+	return nil
+}
+
+func (api *httpApi) StartSubchain(_ context.Context, subchainId string) error {
+	response, err := Post[any](api.Url, NewJsonRpcBody("cbyc_startSelfChain"), api.newHeaders(subchainId), api.transport)
+	if err != nil {
+		return err
+	}
+	if response.Error != nil {
+		return response.Error.Error()
+	}
+	return nil
+}
+
+func (api *httpApi) StopSubchain(_ context.Context, subchainId string) error {
+	response, err := Post[any](api.Url, NewJsonRpcBody("cbyc_stopSelfChain"), api.newHeaders(subchainId), api.transport)
+	if err != nil {
+		return err
+	}
+	if response.Error != nil {
+		return response.Error.Error()
+	}
+	return nil
+}
+
+func (api *httpApi) DeleteSubchain(_ context.Context, subchainId string) error {
+	response, err := Post[any](api.Url, NewJsonRpcBody("cbyc_delSelfChain"), api.newHeaders(subchainId), api.transport)
+	if err != nil {
+		return err
+	}
+	if response.Error != nil {
+		return response.Error.Error()
+	}
+	return nil
+}

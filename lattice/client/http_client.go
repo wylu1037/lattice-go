@@ -280,6 +280,48 @@ type HttpApi interface {
 	//   - error
 	GetNodeInfo(ctx context.Context) (*types.NodeInfo, error)
 
+	// JoinSubchain 让当前节点加入子链（通道）
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - subchainId uint64：要加入的链
+	//   - networkId uint64: 网络ID
+	//   - inode string: 已在该链中的节点的INode信息
+	//
+	// Returns:
+	//   - error
+	JoinSubchain(ctx context.Context, subchainId, networkId uint64, inode string) error
+
+	// StartSubchain 启动子链（通道）
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - subchainId string
+	//
+	// Returns:
+	//   - error
+	StartSubchain(ctx context.Context, subchainId string) error
+
+	// StopSubchain 停止子链（通道）
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - subchainId string
+	//
+	// Returns:
+	//   - error
+	StopSubchain(ctx context.Context, subchainId string) error
+
+	// DeleteSubchain 删除子链（通道）
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - subchainId string
+	//
+	// Returns:
+	//   - error
+	DeleteSubchain(ctx context.Context, subchainId string) error
+
 	// GetSubchain 获取子链的配置信息
 	//
 	// Parameters:
@@ -377,6 +419,16 @@ type HttpApi interface {
 	//   - error
 	GetNodeConfig(ctx context.Context, chainID string) (*types.NodeConfig, error)
 
+	// GetContractInformation 获取合约的信息
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - chainID string
+	//   - contractAddress string
+	//
+	// Returns:
+	//   - *types.ContractInformation
+	//   - error
 	GetContractInformation(ctx context.Context, chainID, contractAddress string) (*types.ContractInformation, error)
 }
 
