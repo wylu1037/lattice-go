@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/wylu1037/lattice-go/common/convert"
 	"testing"
 )
 
@@ -17,4 +18,14 @@ func TestNewCrypto(t *testing.T) {
 	source, err := c.Decrypt(cipher, sk)
 	assert.Nil(t, err)
 	assert.Equal(t, data, source)
+}
+
+func TestGenerateAddressFromPrivateKey(t *testing.T) {
+	api := NewCrypto(Sm2p256v1)
+	sk := "0x72ffdd7245e0ad7cffd533ad99f54048bf3fa6358e071fba8c2d7783d992d997"
+	privateKey, _ := api.HexToSK(sk)
+	address, _ := api.PKToAddress(&privateKey.PublicKey)
+	zltc := convert.AddressToZltc(address)
+	expect := "zltc_jF4U7umzNpiE8uU35RCBp9f2qf53H5CZZ"
+	assert.Equal(t, zltc, expect)
 }

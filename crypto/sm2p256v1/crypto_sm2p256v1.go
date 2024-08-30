@@ -140,17 +140,20 @@ func (i *GmApi) BytesToSK(sk []byte) (*ecdsa.PrivateKey, error) {
 
 // PKToAddress 将公钥(取后20位字节)转为地址
 // Parameters
-//   - pk *ecdsa.PublicKey: 公钥
+//   - pk *ecdsa.PublicKey: 公钥，0x2009ad3a29e616c9cebd7a8e3c7ec9d19e8445528dfaa1138ce8e1e68b7d77a682e104b3f3a05a2a7a21e70dd6934e75deab211c435dd13ae2d2a605932086e2
 //
 // Returns
-//   - common.Address: 地址
+//   - common.Address: 地址，zltc_jF4U7umzNpiE8uU35RCBp9f2qf53H5CZZ，0xcf5e003f56d2b75844b741f491861b9fa6daa7c6
 //   - error
 func (i *GmApi) PKToAddress(pk *ecdsa.PublicKey) (common.Address, error) {
 	bytes, err := i.PKToBytes(pk)
 	if err != nil {
 		return common.Address{}, err
 	}
-	return common.BytesToAddress(bytes), nil
+	if len(bytes) > 64 {
+		bytes = bytes[len(bytes)-64:]
+	}
+	return common.BytesToAddress(i.Hash(bytes).Bytes()), nil
 }
 
 // Sign 签名
