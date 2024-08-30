@@ -1,9 +1,11 @@
 package errs
 
 const (
-	ErrAddressCode = 5001
+	ErrInvalidAddressCode = 5001
+	ErrMarshallStructCode = 5002
 )
 
 var (
-	ErrAddressFormat = NewError(ErrAddressCode, "address format is invalid", "地址格式不合法")
+	ErrInvalidAddressFormat = NewError(ErrInvalidAddressCode, "The address format is invalid", "地址格式不合法")
+	ErrMarshallStruct       = NewError(ErrMarshallStructCode, "Serialization structure error", "序列化结构体错误")
 )

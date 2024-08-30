@@ -11,16 +11,37 @@ import (
 	"math/big"
 )
 
+// TransactionType 交易类型别名
+//
+//   - TransactionTypeGenesis			  创世交易
+//   - TransactionTypeCreate			  构造交易
+//   - TransactionTypeSend				  发送交易
+//   - TransactionTypeReceive			  接收交易
+//   - TransactionTypeDeployContract	  部署Solidity合约
+//   - TransactionTypeCallContract	      调用Solidity合约
+//   - TransactionTypeUpgradeContract	  升级Solidity合约
+//   - TransactionTypeDeployJavaContract  部署Java和语
+//   - TransactionTypeUpgradeJavaContract 升级Java合约
+//   - TransactionTypeCallJavaContract	  调用Java合约
+//   - TransactionTypeDeployGoContract	  部署Go合约
+//   - TransactionTypeUpgradeGoContract	  升级Go合约
+//   - TransactionTypeCallGoContract	  调用Go合约
 type TransactionType string
 
 const (
-	TransactionTypeGenesis         TransactionType = "genesis"
-	TransactionTypeCreate          TransactionType = "create"
-	TransactionTypeSend            TransactionType = "send"
-	TransactionTypeReceive         TransactionType = "receive"
-	TransactionTypeDeployContract  TransactionType = "contract"
-	TransactionTypeCallContract    TransactionType = "execute"
-	TransactionTypeUpgradeContract TransactionType = "update"
+	TransactionTypeGenesis             TransactionType = "genesis"
+	TransactionTypeCreate              TransactionType = "create"
+	TransactionTypeSend                TransactionType = "send"
+	TransactionTypeReceive             TransactionType = "receive"
+	TransactionTypeDeployContract      TransactionType = "contract"
+	TransactionTypeCallContract        TransactionType = "execute"
+	TransactionTypeUpgradeContract     TransactionType = "update"
+	TransactionTypeDeployJavaContract  TransactionType = "createJava"
+	TransactionTypeUpgradeJavaContract TransactionType = "updateJava"
+	TransactionTypeCallJavaContract    TransactionType = "executeJava"
+	TransactionTypeDeployGoContract    TransactionType = "createGo"
+	TransactionTypeUpgradeGoContract   TransactionType = "updateGo"
+	TransactionTypeCallGoContract      TransactionType = "executeGo"
 )
 
 const (
@@ -43,13 +64,19 @@ const (
 )
 
 var TransactionTypeCode = map[TransactionType]uint8{
-	TransactionTypeGenesis:         Genesis,
-	TransactionTypeCreate:          Create,
-	TransactionTypeSend:            Send,
-	TransactionTypeReceive:         Receive,
-	TransactionTypeDeployContract:  Contract,
-	TransactionTypeCallContract:    Execute,
-	TransactionTypeUpgradeContract: Upgrade,
+	TransactionTypeGenesis:             Genesis,
+	TransactionTypeCreate:              Create,
+	TransactionTypeSend:                Send,
+	TransactionTypeReceive:             Receive,
+	TransactionTypeDeployContract:      Contract,
+	TransactionTypeCallContract:        Execute,
+	TransactionTypeUpgradeContract:     Upgrade,
+	TransactionTypeDeployJavaContract:  DeployJavaContract,
+	TransactionTypeUpgradeJavaContract: UpgradeJavaContract,
+	TransactionTypeCallJavaContract:    ExecuteJavaContract,
+	TransactionTypeDeployGoContract:    DeployGoContract,
+	TransactionTypeUpgradeGoContract:   UpgradeGoContract,
+	TransactionTypeCallGoContract:      ExecuteGoContract,
 }
 
 // Transaction 构造交易的结构体

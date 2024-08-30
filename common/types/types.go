@@ -1,6 +1,11 @@
 package types
 
-import "math/big"
+import (
+	"encoding/hex"
+	"encoding/json"
+	"github.com/wylu1037/lattice-go/common/constant"
+	"math/big"
+)
 
 const (
 	AddressVersion = 1
@@ -192,4 +197,48 @@ type ContractManagement struct {
 	Whitelist      []string               `json:"whiteList"`
 	Blacklist      []string               `json:"blackList"`
 	Administrators map[string]uint8       `json:"managerList"`
+}
+
+// DeployMultilingualContractCode 部署多语言智能合约的代码
+//   - FileName 上传到链上的合约文件名
+type DeployMultilingualContractCode struct {
+	FileName string `json:"contractName,omitempty"`
+}
+
+// UpgradeMultilingualContractCode 升级多语言智能合约的代码
+//   - FileName 上传到链上的合约文件名
+type UpgradeMultilingualContractCode struct {
+	FileName string `json:"contractName,omitempty"`
+}
+
+// CallMultilingualContractCode 调用多语言智能合约的代码
+//   - Method	 调用的合约方法名，示例：`double`
+//   - Arguments 调用的合约方法参数，示例：`{"number":[56,50,55]}`
+type CallMultilingualContractCode struct {
+	Method    string            `json:"methodName,omitempty"`
+	Arguments map[string][]byte `json:"methodArgs,omitempty"`
+}
+
+func (c *DeployMultilingualContractCode) Encode() string {
+	if bytes, err := json.Marshal(c); err != nil {
+		return constant.HexPrefix
+	} else {
+		return constant.HexPrefix + hex.EncodeToString(bytes)
+	}
+}
+
+func (c *UpgradeMultilingualContractCode) Encode() string {
+	if bytes, err := json.Marshal(c); err != nil {
+		return constant.HexPrefix
+	} else {
+		return constant.HexPrefix + hex.EncodeToString(bytes)
+	}
+}
+
+func (c *CallMultilingualContractCode) Encode() string {
+	if bytes, err := json.Marshal(c); err != nil {
+		return constant.HexPrefix
+	} else {
+		return constant.HexPrefix + hex.EncodeToString(bytes)
+	}
 }

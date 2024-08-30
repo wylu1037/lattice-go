@@ -94,7 +94,25 @@ func newMemoryCacheConfig(lifeDuration time.Duration, cleanInterval time.Duratio
 
 type BlockCache interface {
 	SetHttpApi(httpApi client.HttpApi)
+
+	// SetBlock 设置区块缓存
+	//
+	// Parameters:
+	//   - key string: 缓存的Key
+	//   - block *types.LatestBlock: 缓存的区块
+	//
+	// Returns:
+	//   - error
 	SetBlock(chainId, address string, block *types.LatestBlock) error
+
+	// GetBlock 获取区块缓存
+	//
+	// Parameters:
+	//   - key string: 缓存的Key
+	//
+	// Returns:
+	//   - *types.LatestBlock: 缓存的区块信息
+	//   - error
 	GetBlock(chainId, address string) (*types.LatestBlock, error)
 }
 
@@ -112,14 +130,6 @@ func (c *memoryBlockCache) SetHttpApi(httpApi client.HttpApi) {
 	c.httpApi = httpApi
 }
 
-// SetBlock 设置区块缓存
-//
-// Parameters:
-//   - key string: 缓存的Key
-//   - block *types.LatestBlock: 缓存的区块
-//
-// Returns:
-//   - error
 func (c *memoryBlockCache) SetBlock(chainId, address string, block *types.LatestBlock) error {
 	if !c.enable {
 		return nil
@@ -142,14 +152,6 @@ func (c *memoryBlockCache) SetBlock(chainId, address string, block *types.Latest
 	return nil
 }
 
-// GetBlock 获取区块缓存
-//
-// Parameters:
-//   - key string: 缓存的Key
-//
-// Returns:
-//   - *types.LatestBlock: 缓存的区块信息
-//   - error
 func (c *memoryBlockCache) GetBlock(chainId, address string) (*types.LatestBlock, error) {
 	if !c.enable {
 		return c.httpApi.GetLatestBlock(context.Background(), chainId, address)

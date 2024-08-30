@@ -66,3 +66,14 @@ const (
 	ContractManagementModeWHITELIST ContractManagementMode = iota
 	ContractManagementModeBLACKLIST
 )
+
+// ContractLang 合约语言
+//
+//   - ContractLangGo	Go
+//   - ContractLangJava Java.
+type ContractLang string
+
+const (
+	ContractLangGo   ContractLang = "Go"
+	ContractLangJava ContractLang = "Java"
+)

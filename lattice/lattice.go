@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	httpProtocol      = "http"
-	httpsProtocol     = "https"
-	websocketProtocol = "ws"
+	httpProtocol              = "http"
+	httpsProtocol             = "https"
+	websocketProtocol         = "ws"
+	defaultHttpRequestTimeout = time.Second * 15
 )
 
 // NewLattice 初始化LatticeApi
@@ -443,10 +444,98 @@ type Lattice interface {
 	//   - *types.Receipt: 回执
 	//   - error
 	UpgradeContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	// DeployGoContract 部署GO合约
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - credentials *Credentials: 部署合约的凭证
+	//   - chainId string: 要部署到的链(通道)ID
+	//   - data types.DeployMultilingualContractCode
+	//   - payload string: 交易备注，16进制带0x前缀的字符串
+	//   - amount uint64: 转账额度
+	//   - joule uint64: 部署GO合约的手续费
+	//
+	// Returns:
+	//   - *common.Hash: 部署GO合约的交易哈希
+	//   - error: 部署GO合约时的错误
+	DeployGoContract(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	UpgradeGoContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	CallGoContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	// DeployJavaContract 部署JAVA合约
+	//
+	// Parameters:
+	//   - ctx context.Context
+	//   - credentials *Credentials: 部署合约的凭证
+	//   - chainId string: 要部署到的链(通道)ID
+	//   - data types.DeployMultilingualContractCode
+	//   - payload string: 交易备注，16进制带0x前缀的字符串
+	//   - amount uint64: 转账额度
+	//   - joule uint64: 部署JAVA合约的手续费
+	//
+	// Returns:
+	//   - *common.Hash: 部署JAVA合约的交易哈希
+	//   - error: 部署JAVA合约时的错误
+	DeployJavaContract(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	UpgradeJavaContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	CallJavaContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error)
+
+	DeployGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	UpgradeGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	CallGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	DeployJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	UpgradeJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
+
+	CallJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error)
 }
 
 func (svc *lattice) HttpApi() client.HttpApi {
 	return svc.httpApi
+}
+
+// Start handle transaction, contains
+// 1.Sign transaction,
+// 2.Send transaction to the chain.
+func (svc *lattice) handleTransaction(ctx context.Context, credentials *Credentials, chainId string, transaction *block.Transaction, latestBlock *types.LatestBlock) (*common.Hash, error) {
+	chainIdAsInt, err := strconv.Atoi(chainId)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	sk, err := credentials.GetSK()
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+
+	cancelCtx, cancelFunc := context.WithTimeout(ctx, defaultHttpRequestTimeout)
+	defer cancelFunc()
+	hash, err := svc.httpApi.SendSignedTransaction(cancelCtx, chainId, transaction)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	} else {
+		latestBlock.Hash = *hash
+		latestBlock.IncrHeight()
+		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
+			log.Error().Err(err)
+		}
+	}
+	return hash, nil
 }
 
 func (svc *lattice) Transfer(ctx context.Context, credentials *Credentials, chainId, linker, payload string, amount, joule uint64) (*common.Hash, error) {
@@ -470,32 +559,9 @@ func (svc *lattice) Transfer(ctx context.Context, credentials *Credentials, chai
 		SetJoule(joule).
 		Build()
 
-	chainIdAsInt, err := strconv.Atoi(chainId)
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
 	if err != nil {
-		log.Error().Err(err)
 		return nil, err
-	}
-	sk, err := credentials.GetSK()
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	} else {
-		latestBlock.Hash = *hash
-		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
-			log.Error().Err(err)
-		}
 	}
 	log.Debug().Msgf("结束转账交易，哈希为：%s", hash.String())
 	return hash, nil
@@ -527,32 +593,9 @@ func (svc *lattice) DeployContract(ctx context.Context, credentials *Credentials
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	chainIdAsInt, err := strconv.Atoi(chainId)
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
 	if err != nil {
-		log.Error().Err(err)
 		return nil, err
-	}
-	sk, err := credentials.GetSK()
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	} else {
-		latestBlock.Hash = *hash
-		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
-			log.Error().Err(err)
-		}
 	}
 	log.Debug().Msgf("结束部署合约，哈希为：%s", hash.String())
 	return hash, nil
@@ -583,32 +626,9 @@ func (svc *lattice) CallContract(ctx context.Context, credentials *Credentials, 
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	chainIdAsInt, err := strconv.Atoi(chainId)
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
 	if err != nil {
-		log.Error().Err(err)
 		return nil, err
-	}
-	sk, err := credentials.GetSK()
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	} else {
-		latestBlock.Hash = *hash
-		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
-			log.Error().Err(err)
-		}
 	}
 	log.Debug().Msgf("结束调用合约，哈希为：%s", hash.String())
 	return hash, nil
@@ -712,32 +732,9 @@ func (svc *lattice) UpgradeContract(ctx context.Context, credentials *Credential
 	dataHash := cryptoInstance.Hash(hexutil.MustDecode(data))
 	transaction.CodeHash = dataHash
 
-	chainIdAsInt, err := strconv.Atoi(chainId)
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
 	if err != nil {
-		log.Error().Err(err)
 		return nil, err
-	}
-	sk, err := credentials.GetSK()
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-	err = transaction.SignTX(uint64(chainIdAsInt), svc.chainConfig.Curve, sk)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	}
-
-	hash, err := svc.httpApi.SendSignedTransaction(ctx, chainId, transaction)
-	if err != nil {
-		log.Error().Err(err)
-		return nil, err
-	} else {
-		latestBlock.Hash = *hash
-		latestBlock.IncrHeight()
-		if err := svc.blockCache.SetBlock(chainId, credentials.AccountAddress, latestBlock); err != nil {
-			log.Error().Err(err)
-		}
 	}
 	log.Debug().Msgf("结束升级合约，哈希为：%s", hash.String())
 	return hash, nil
@@ -745,6 +742,211 @@ func (svc *lattice) UpgradeContract(ctx context.Context, credentials *Credential
 
 func (svc *lattice) UpgradeContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress, data, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
 	hash, err := svc.UpgradeContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) deployMultilingualContract(ctx context.Context, credentials *Credentials, chainId string, lang types.ContractLang, data types.DeployMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起部署%s合约交易，chainId: %s, data: %+v, payload: %s, amount: %d, joule: %d", lang, chainId, data, payload, amount, joule)
+
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+
+	var transactionType block.TransactionType
+	switch lang {
+	case types.ContractLangGo:
+		transactionType = block.TransactionTypeDeployGoContract
+	case types.ContractLangJava:
+		transactionType = block.TransactionTypeDeployJavaContract
+	default:
+	}
+	code := data.Encode()
+	transaction := block.NewTransactionBuilder(transactionType).
+		SetLatestBlock(latestBlock).
+		SetOwner(credentials.AccountAddress).
+		SetLinker(constant.ZeroAddress).
+		SetCode(code).
+		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
+		Build()
+
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(code))
+	transaction.CodeHash = dataHash
+
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug().Msgf("结束部署%s合约，哈希为：%s", lang, hash.String())
+	return hash, nil
+}
+
+func (svc *lattice) upgradeMultilingualContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, lang types.ContractLang, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起升级%s合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", lang, chainId, contractAddress, data, payload, amount, joule)
+
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	var transactionType block.TransactionType
+	switch lang {
+	case types.ContractLangGo:
+		transactionType = block.TransactionTypeUpgradeGoContract
+	case types.ContractLangJava:
+		transactionType = block.TransactionTypeUpgradeJavaContract
+	default:
+	}
+	code := data.Encode()
+	transaction := block.NewTransactionBuilder(transactionType).
+		SetLatestBlock(latestBlock).
+		SetOwner(credentials.AccountAddress).
+		SetLinker(contractAddress).
+		SetCode(code).
+		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
+		Build()
+
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(code))
+	transaction.CodeHash = dataHash
+
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug().Msgf("结束升级%s合约，哈希为：%s", lang, hash.String())
+	return hash, nil
+}
+
+func (svc *lattice) callMultilingualContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, lang types.ContractLang, data types.CallMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	log.Debug().Msgf("开始发起调用%s合约交易，chainId: %s, contractAddress: %s, data: %s, payload: %s, amount: %d, joule: %d", lang, chainId, contractAddress, data, payload, amount, joule)
+
+	svc.accountLock.Obtain(chainId, credentials.AccountAddress)
+	defer svc.accountLock.Unlock(chainId, credentials.AccountAddress)
+
+	latestBlock, err := svc.blockCache.GetBlock(chainId, credentials.AccountAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	var transactionType block.TransactionType
+	switch lang {
+	case types.ContractLangGo:
+		transactionType = block.TransactionTypeCallGoContract
+	case types.ContractLangJava:
+		transactionType = block.TransactionTypeCallJavaContract
+	default:
+	}
+	code := data.Encode()
+	transaction := block.NewTransactionBuilder(transactionType).
+		SetLatestBlock(latestBlock).
+		SetOwner(credentials.AccountAddress).
+		SetLinker(contractAddress).
+		SetCode(code).
+		SetPayload(payload).
+		SetAmount(amount).
+		SetJoule(joule).
+		Build()
+
+	cryptoInstance := crypto.NewCrypto(svc.chainConfig.Curve)
+	dataHash := cryptoInstance.Hash(hexutil.MustDecode(code))
+	transaction.CodeHash = dataHash
+
+	hash, err := svc.handleTransaction(ctx, credentials, chainId, transaction, latestBlock)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug().Msgf("结束调用%s合约，哈希为：%s", lang, hash.String())
+	return hash, nil
+}
+
+func (svc *lattice) DeployGoContract(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.deployMultilingualContract(ctx, credentials, chainId, types.ContractLangGo, data, payload, amount, joule)
+}
+
+func (svc *lattice) UpgradeGoContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.upgradeMultilingualContract(ctx, credentials, chainId, contractAddress, types.ContractLangGo, data, payload, amount, joule)
+}
+
+func (svc *lattice) CallGoContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.callMultilingualContract(ctx, credentials, chainId, contractAddress, types.ContractLangGo, data, payload, amount, joule)
+}
+
+func (svc *lattice) DeployJavaContract(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.deployMultilingualContract(ctx, credentials, chainId, types.ContractLangJava, data, payload, amount, joule)
+}
+
+func (svc *lattice) UpgradeJavaContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.upgradeMultilingualContract(ctx, credentials, chainId, contractAddress, types.ContractLangJava, data, payload, amount, joule)
+}
+
+func (svc *lattice) CallJavaContract(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64) (*common.Hash, error) {
+	return svc.callMultilingualContract(ctx, credentials, chainId, contractAddress, types.ContractLangJava, data, payload, amount, joule)
+}
+
+func (svc *lattice) DeployGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployGoContract(ctx, credentials, chainId, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) UpgradeGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.UpgradeGoContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) CallGoContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.CallGoContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) DeployJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId string, data types.DeployMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.DeployJavaContract(ctx, credentials, chainId, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) UpgradeJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.UpgradeMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.UpgradeJavaContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return svc.waitReceipt(ctx, chainId, hash, retryStrategy)
+}
+
+func (svc *lattice) CallJavaContractWaitReceipt(ctx context.Context, credentials *Credentials, chainId, contractAddress string, data types.CallMultilingualContractCode, payload string, amount, joule uint64, retryStrategy *RetryStrategy) (*common.Hash, *types.Receipt, error) {
+	hash, err := svc.CallJavaContract(ctx, credentials, chainId, contractAddress, data, payload, amount, joule)
 	if err != nil {
 		return nil, nil, err
 	}
