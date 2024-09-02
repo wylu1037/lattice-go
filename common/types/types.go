@@ -149,19 +149,21 @@ type NodeConfig struct {
 	Lattice struct {
 		NetworkIDGroup []int `json:"networkIDGroup"`
 	} `json:"latc"`
-
 	Node struct {
-		Name         string   `json:"name"`
-		DataDir      string   `json:"dataDir"`
-		SecondaryDir string   `json:"secondaryDir"`
-		Host         string   `json:"Host"`
-		HTTPPort     int      `json:"HTTPPort"`
-		WSPort       int      `json:"WSPort"`
-		P2PPort      int      `json:"P2PPort"`
-		GinHTTPPort  int      `json:"GinHTTPPort"`
-		JWTEnable    bool     `json:"JWTEnable"`
-		JWTSecret    string   `json:"JWTSecret"`
-		Bootstrap    []string `json:"bootstrap"`
+		Name                                    string   `json:"name"`
+		DataDir                                 string   `json:"dataDir"`
+		SecondaryDir                            string   `json:"secondaryDir"`
+		Host                                    string   `json:"Host"`
+		HTTPPort                                int      `json:"HTTPPort"`
+		WSPort                                  int      `json:"WSPort"`
+		P2PPort                                 int      `json:"P2PPort"`
+		GinHTTPPort                             int      `json:"GinHTTPPort"`
+		JWTEnable                               bool     `json:"JWTEnable"`
+		JWTSecret                               string   `json:"JWTSecret"`
+		Bootstrap                               []string `json:"bootstrap"`
+		MultilingualContractBaseDir             string   `json:"basedir"`
+		MultilingualContractPattern             string   `json:"pattern"`    // 生成合约执行路径pattern
+		MultilingualContractRedundantDeployment bool     `json:"redundancy"` // 是否支持冗余部署，即对一个合约文件部署多次，生成多个合约地址
 	}
 }
 
