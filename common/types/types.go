@@ -80,7 +80,7 @@ type NodeInfo struct {
 //   - IsGM 是否使用了Sm2p256v1曲线
 //   - RootPublicKey 中心化CA根证书公钥
 //   - EnableContractLifecycle 是否开启合约生命周期
-//   - EnableVotingDictatorship 是否开启投票时盟主一票制度
+//   - EnableVotingDictatorship 是否开启投票(合约生命周期)时盟主一票制度
 //   - ContractDeploymentVotingRule 合约部署的投票规则
 //   - EnableContractManagement 是否开启合约管理
 //   - ChainByChainVotingRule 以链建链投票规则
