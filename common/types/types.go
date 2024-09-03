@@ -75,7 +75,7 @@ type NodeInfo struct {
 //   - Epoch                           重置投票和检查点的纪元长度
 //   - Tokenless                       false:有通证 true:无通证
 //   - Period                          出块间隔
-//   - NoTxDelayedMining               是否不允许无交易时快速出空块，无交易时延迟出块
+//   - EnableNoTxDelayedMining         是否不允许无交易时快速出空块，无交易时延迟出块
 //   - NoTxDelayedMiningPeriodMultiple 无交易时的延迟出块间隔倍数
 //   - IsGM                            是否使用了Sm2p256v1曲线
 //   - RootPublicKey                   中心化CA根证书公钥
@@ -96,7 +96,7 @@ type Subchain struct {
 	Epoch                           uint       `json:"epoch,omitempty"`
 	Tokenless                       bool       `json:"tokenless,omitempty"`
 	Period                          uint       `json:"period,omitempty"`
-	NoTxDelayedMining               bool       `json:"noEmptyAnchor,omitempty"`
+	EnableNoTxDelayedMining         bool       `json:"noEmptyAnchor,omitempty"`
 	NoTxDelayedMiningPeriodMultiple uint32     `json:"emptyAnchorPeriodMul,omitempty"`
 	IsGM                            bool       `json:"GM,omitempty"`
 	RootPublicKey                   string     `json:"rootPublicKey,omitempty"`
