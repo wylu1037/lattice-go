@@ -66,47 +66,47 @@ type NodeInfo struct {
 }
 
 // Subchain 子链信息
-//   - ID                            链ID
-//   - Name                          名称
-//   - Desc                          描述
-//   - LatcGodAddr                   守护链的地址
-//   - LatcSaints                    共识节点列表
-//   - Consensus                     共识
-//   - Epoch                         重置投票和检查点的纪元长度
-//   - Tokenless                     false:有通证 true:无通证
-//   - Period                        出块间隔
-//   - NoEmptyAnchor                 是否不允许快速出空块
-//   - EmptyAnchorPeriodMul          无交易时出快的时间间隔倍数
-//   - IsGM                          是否使用了Sm2p256v1曲线
-//   - RootPublicKey                 中心化CA根证书公钥
-//   - EnableContractLifecycle       是否开启合约生命周期
-//   - EnableVotingDictatorship      是否开启投票(合约生命周期)时盟主一票制度
-//   - ContractDeploymentVotingRule  合约部署的投票规则
-//   - EnableContractManagement      是否开启合约管理
-//   - ChainByChainVotingRule        以链建链投票规则
-//   - ProposalExpirationDays        提案的过期天数，默认7天
-//   - ConfigurationModifyVotingRule 配置修改的投票规则
+//   - ID                              链ID
+//   - Name                            名称
+//   - Desc                            描述
+//   - LatcGodAddr                     守护链的地址
+//   - LatcSaints                      共识节点列表
+//   - Consensus                       共识
+//   - Epoch                           重置投票和检查点的纪元长度
+//   - Tokenless                       false:有通证 true:无通证
+//   - Period                          出块间隔
+//   - NoTxDelayedMining               是否不允许无交易时快速出空块，无交易时延迟出块
+//   - NoTxDelayedMiningPeriodMultiple 无交易时的延迟出块间隔倍数
+//   - IsGM                            是否使用了Sm2p256v1曲线
+//   - RootPublicKey                   中心化CA根证书公钥
+//   - EnableContractLifecycle         是否开启合约生命周期
+//   - EnableVotingDictatorship        是否开启投票(合约生命周期)时盟主一票制度
+//   - ContractDeploymentVotingRule    合约部署的投票规则
+//   - EnableContractManagement        是否开启合约管理
+//   - ChainByChainVotingRule          以链建链投票规则
+//   - ProposalExpirationDays          提案的过期天数，默认7天
+//   - ConfigurationModifyVotingRule   配置修改的投票规则
 type Subchain struct {
-	ID                            uint64     `json:"latcId,omitempty"`
-	Name                          string     `json:"name,omitempty"`
-	Desc                          string     `json:"desc,omitempty"`
-	LatcGodAddr                   string     `json:"latcGod,omitempty"`
-	LatcSaints                    []string   `json:"latcSaints,omitempty"`
-	Consensus                     string     `json:"consensus,omitempty"`
-	Epoch                         uint       `json:"epoch,omitempty"`
-	Tokenless                     bool       `json:"tokenless,omitempty"`
-	Period                        uint       `json:"period,omitempty"`
-	NoEmptyAnchor                 bool       `json:"noEmptyAnchor,omitempty"`
-	EmptyAnchorPeriodMul          uint32     `json:"emptyAnchorPeriodMul,omitempty"`
-	IsGM                          bool       `json:"GM,omitempty"`
-	RootPublicKey                 string     `json:"rootPublicKey,omitempty"`
-	EnableContractLifecycle       bool       `json:"isContractVote,omitempty"`
-	EnableVotingDictatorship      bool       `json:"isDictatorship,omitempty"`
-	ContractDeploymentVotingRule  VotingRule `json:"deployRule,omitempty"`
-	EnableContractManagement      bool       `json:"contractPermission,omitempty"`
-	ChainByChainVotingRule        VotingRule `json:"chainByChainVote,omitempty"`
-	ProposalExpirationDays        uint       `json:"ProposalExpireTime,omitempty"`
-	ConfigurationModifyVotingRule VotingRule `json:"configModifyRule,omitempty"`
+	ID                              uint64     `json:"latcId,omitempty"`
+	Name                            string     `json:"name,omitempty"`
+	Desc                            string     `json:"desc,omitempty"`
+	LatcGodAddr                     string     `json:"latcGod,omitempty"`
+	LatcSaints                      []string   `json:"latcSaints,omitempty"`
+	Consensus                       string     `json:"consensus,omitempty"`
+	Epoch                           uint       `json:"epoch,omitempty"`
+	Tokenless                       bool       `json:"tokenless,omitempty"`
+	Period                          uint       `json:"period,omitempty"`
+	NoTxDelayedMining               bool       `json:"noEmptyAnchor,omitempty"`
+	NoTxDelayedMiningPeriodMultiple uint32     `json:"emptyAnchorPeriodMul,omitempty"`
+	IsGM                            bool       `json:"GM,omitempty"`
+	RootPublicKey                   string     `json:"rootPublicKey,omitempty"`
+	EnableContractLifecycle         bool       `json:"isContractVote,omitempty"`
+	EnableVotingDictatorship        bool       `json:"isDictatorship,omitempty"`
+	ContractDeploymentVotingRule    VotingRule `json:"deployRule,omitempty"`
+	EnableContractManagement        bool       `json:"contractPermission,omitempty"`
+	ChainByChainVotingRule          VotingRule `json:"chainByChainVote,omitempty"`
+	ProposalExpirationDays          uint       `json:"ProposalExpireTime,omitempty"`
+	ConfigurationModifyVotingRule   VotingRule `json:"configModifyRule,omitempty"`
 }
 
 // ConsensusNodeStatus 共识节点的状态

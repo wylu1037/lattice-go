@@ -26,7 +26,7 @@ const (
 type Consensus string
 
 const (
-	ConsensusPOA  Consensus = "POA"
+	ConsensusPOA  Consensus = "PoA"
 	ConsensusPBFT Consensus = "PBFT"
 	ConsensusRAFT Consensus = "RAFT"
 )

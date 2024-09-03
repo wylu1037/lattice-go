@@ -197,7 +197,7 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 		case abi.AddressTy:
 			addressArr := make([]common.Address, len(convertedArgs))
 			for i, converted := range convertedArgs {
-				addressArr[i] = converted.(common.Address)
+				addressArr[i] = common.HexToAddress(converted.(string))
 			}
 			return addressArr, nil
 		case abi.BoolTy:
@@ -427,7 +427,7 @@ func (f *latticeFunction) ConvertArgument(abiType abi.Type, param interface{}) (
 	case abi.AddressTy:
 		if s, ok := param.(string); ok {
 			if strings.HasPrefix(s, constant.HexPrefix) {
-				return s, nil
+				return common.HexToAddress(s), nil
 			} else if strings.HasPrefix(s, constant.AddressTitle) {
 				address, err := convert.ZltcToAddress(s)
 				if err != nil {
