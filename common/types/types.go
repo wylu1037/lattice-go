@@ -295,3 +295,9 @@ type NodeProtocolConfig struct {
 	ProposalExpirationDays          uint       `json:"ProposalExpireTime,omitempty"`
 	ConfigurationModifyVotingRule   VotingRule `json:"configModifyRule,omitempty"`
 }
+
+// Evidences 留痕信息
+type Evidences struct {
+	Total uint64                 `json:"total"`
+	Data  map[string]interface{} `json:"data"`
+}

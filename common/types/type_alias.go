@@ -77,3 +77,65 @@ const (
 	ContractLangGo   ContractLang = "Go"
 	ContractLangJava ContractLang = "Java"
 )
+
+// EvidenceType 留痕类型
+//   - EvidenceTypeVOTING   投票
+//   - EvidenceTypeTBLOCK   账户交易
+//   - EvidenceTypeDBLOCK   守护区块
+//   - EvidenceTypeSIGN     签名
+//   - EvidenceTypePRECALL  预执行合约
+//   - EvidenceTypeONCHAIN  发布合约交易
+//   - EvidenceTypeEXECUTE  执行合约交易
+//   - EvidenceTypeUPDATE   合约升级
+//   - EvidenceTypeUPGRADE  升级合约的账户交易
+//   - EvidenceTypeDEPLOY   合约部署
+//   - EvidenceTypeCALL     合约调用
+//   - EvidenceTypeREVOKE   合约吊销
+//   - EvidenceTypeFREEZE   合约冻结
+//   - EvidenceTypeUNFREEZE 合约解冻
+//   - EvidenceTypeERROR    error错误
+//   - EvidenceTypeCRITICAL crit错误
+//   - EvidenceTypeADDED    增加账户
+//   - EvidenceTypeDELETED  删除账户
+//   - EvidenceTypeLOCKED   锁定账户
+//   - EvidenceTypeUNLOCKED 解锁账户
+//   - EvidenceTypeORACLE   预言机
+type EvidenceType string
+
+const (
+	EvidenceTypeVOTING   EvidenceType = "vote"
+	EvidenceTypeTBLOCK   EvidenceType = "tblock"
+	EvidenceTypeDBLOCK   EvidenceType = "dblock"
+	EvidenceTypeSIGN     EvidenceType = "sign"
+	EvidenceTypePRECALL  EvidenceType = "pre"
+	EvidenceTypeONCHAIN  EvidenceType = "onChain"
+	EvidenceTypeEXECUTE  EvidenceType = "execute"
+	EvidenceTypeUPDATE   EvidenceType = "update"
+	EvidenceTypeUPGRADE  EvidenceType = "upgrade"
+	EvidenceTypeDEPLOY   EvidenceType = "deploy"
+	EvidenceTypeCALL     EvidenceType = "call"
+	EvidenceTypeREVOKE   EvidenceType = "revoke"
+	EvidenceTypeFREEZE   EvidenceType = "freeze"
+	EvidenceTypeUNFREEZE EvidenceType = "release"
+	EvidenceTypeERROR    EvidenceType = "error"
+	EvidenceTypeCRITICAL EvidenceType = "crit"
+	EvidenceTypeADDED    EvidenceType = "add"
+	EvidenceTypeDELETED  EvidenceType = "del"
+	EvidenceTypeLOCKED   EvidenceType = "lock"
+	EvidenceTypeUNLOCKED EvidenceType = "unlock"
+	EvidenceTypeORACLE   EvidenceType = "oracle"
+)
+
+// EvidenceLevel 留痕级别
+//   - EvidenceLevelEMPTY    不填则默认为执行日志
+//   - EvidenceLevelNONE	 执行日志
+//   - EvidenceLevelERROR    error级别的错误日志
+//   - EvidenceLevelCRITICAL crit级别的错误日志
+type EvidenceLevel string
+
+const (
+	EvidenceLevelEMPTY    EvidenceLevel = ""
+	EvidenceLevelNONE     EvidenceLevel = "none"
+	EvidenceLevelERROR    EvidenceLevel = "error"
+	EvidenceLevelCRITICAL EvidenceLevel = "crit"
+)

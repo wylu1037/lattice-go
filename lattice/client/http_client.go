@@ -463,6 +463,33 @@ type HttpApi interface {
 
 	// GetTransactionsPagination 根据守护区块高度分页查询交易
 	GetTransactionsPagination(ctx context.Context, chainId string, startDaemonBlockHeight uint64, pageSize uint16) (*types.TransactionsPagination, error)
+
+	// GetEvidences 获取留痕信息
+	//
+	// Parameters:
+	//   - chainId string
+	//   - date string: 格式20240511
+	//   - evidenceType string
+	//   - page int
+	//   - pageSize int
+	//
+	// Returns:
+	//   - o
+	GetEvidences(ctx context.Context, chainId, date string, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error)
+
+	// GetErrorEvidences 获取错误留痕
+	//
+	// Parameters:
+	//   - chainId string
+	//   - date string: 格式20240511
+	//   - level string: 日志级别, "none":执行日志, "error":error级别的错误日志, "crit":crit级别的错误日志, 不填则默认为执行日志
+	//   - eviType string: 日志类型, "vote":投票, "tblock":账户交易, "dblock":守护区块, "sign":签名, "pre":预执行合约, "onChain":发布合约交易, "execute":执行合约交易, "update":合约升级, "upgrade":升级合约的账户交易, "deploy":合约部署, "call":合约调用, "revoke":合约吊销, "freeze":合约冻结, "release":合约解冻, "error":error错误, "crit":crit错误, "add":增加账户, "del":删除账户, "lock":锁定账户, "unlock":解锁账户, "oracle":预言机
+	//   - page int
+	//   - pageSize int
+	//
+	// Returns:
+	//   - o
+	GetErrorEvidences(ctx context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error)
 }
 
 type httpApi struct {
@@ -540,6 +567,28 @@ func (api *httpApi) ExistsBusinessContractAddress(ctx context.Context, chainId, 
 		return false, response.Error.Error()
 	}
 	return *response.Result, nil
+}
+
+func (api *httpApi) GetEvidences(_ context.Context, chainId, date string, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
+	response, err := Post[types.Evidences](api.Url, NewJsonRpcBody("latc_getEvidences", date, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetErrorEvidences(_ context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
+	response, err := Post[types.Evidences](api.Url, NewJsonRpcBody("latc_getErrorEvidences", date, evidenceLevel, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
 }
 
 // Post send http request use post method
