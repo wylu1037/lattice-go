@@ -442,6 +442,15 @@ type HttpApi interface {
 	//   - *types.ContractManagement
 	//   - error
 	GetContractManagement(ctx context.Context, chainID, contractAddress string) (*types.ContractManagement, error)
+
+	// GetDaemonBlockByHash 根据守护区块哈希查询守护区块信息
+	GetDaemonBlockByHash(ctx context.Context, chainId, hash string) (*types.DaemonBlock, error)
+
+	// ExistsBusinessContractAddress 检查存证的业务合约地址是否存在
+	ExistsBusinessContractAddress(ctx context.Context, chainId, address string) (bool, error)
+
+	// GetTransactionBlockByHash 根据哈希查询交易区块的信息
+	GetTransactionBlockByHash(ctx context.Context, chainId, hash string) (*types.TransactionBlock, error)
 }
 
 type httpApi struct {
@@ -475,28 +484,6 @@ func (api *httpApi) newHeaders(chainId string) map[string]string {
 		headers[headerAuthorize] = fmt.Sprintf("Bearer %s", token)
 	}
 	return headers
-}
-
-func (api *httpApi) GetLatestBlock(_ context.Context, chainId, accountAddress string) (*types.LatestBlock, error) {
-	response, err := Post[types.LatestBlock](api.Url, NewJsonRpcBody("latc_getCurrentTBDB", accountAddress), api.newHeaders(chainId), api.transport)
-	if err != nil {
-		return nil, err
-	}
-	if response.Error != nil {
-		return nil, response.Error.Error()
-	}
-	return response.Result, nil
-}
-
-func (api *httpApi) GetLatestBlockWithPending(_ context.Context, chainId, accountAddress string) (*types.LatestBlock, error) {
-	response, err := Post[types.LatestBlock](api.Url, NewJsonRpcBody("latc_getPendingTBDB", accountAddress), api.newHeaders(chainId), api.transport)
-	if err != nil {
-		return nil, err
-	}
-	if response.Error != nil {
-		return nil, response.Error.Error()
-	}
-	return response.Result, nil
 }
 
 func (api *httpApi) SendSignedTransaction(_ context.Context, chainId string, signedTX *block.Transaction) (*common.Hash, error) {
@@ -549,15 +536,15 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 	return *response.Result, nil
 }
 
-func (api *httpApi) GetLatestDaemonBlock(_ context.Context, chainID string) (*types.DaemonBlock, error) {
-	response, err := Post[types.DaemonBlock](api.Url, NewJsonRpcBody("latc_getCurrentDBlock"), api.newHeaders(chainID), api.transport)
+func (api *httpApi) ExistsBusinessContractAddress(ctx context.Context, chainId, address string) (bool, error) {
+	response, err := Post[bool](api.Url, NewJsonRpcBody("wallet_confirmTaggedContract", address), api.newHeaders(chainId), api.transport)
 	if err != nil {
-		return nil, err
+		return false, nil
 	}
 	if response.Error != nil {
-		return nil, response.Error.Error()
+		return false, response.Error.Error()
 	}
-	return response.Result, nil
+	return *response.Result, nil
 }
 
 // Post send http request use post method
