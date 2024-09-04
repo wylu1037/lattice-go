@@ -116,3 +116,31 @@ func DecodeReturn(myabi *abi.ABI, functionName, contractReturn string) (string, 
 
 	return string(data), nil
 }
+
+// DecodeCall 解码合约的入参
+func DecodeCall(myabi *abi.ABI, functionName, code string) (string, error) {
+	method, ok := myabi.Methods[functionName]
+	if !ok {
+		return "", fmt.Errorf("合约方法【%s】不存在", functionName)
+	}
+
+	inputBytes, err := hexutil.Decode(code)
+	if err != nil {
+		return "", err
+	}
+	args := method.Inputs
+	res, err := args.UnpackValues(inputBytes[4:])
+	if err != nil {
+		return "", err
+	}
+	finalRes := make(map[string]interface{}, len(res))
+	for i, v := range res {
+		finalRes[args[i].Name] = v
+	}
+	data, err := json.Marshal(finalRes)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
