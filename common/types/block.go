@@ -46,7 +46,7 @@ type DaemonBlock struct {
 	Signer       string        `json:"signer"`
 	Contracts    []string      `json:"contracts"`
 	Difficulty   *big.Int      `json:"difficulty"`
-	Height       uint64        `json:"number"`
+	Height       *big.Int      `json:"number"`
 	Extra        string        `json:"extra"`
 	Reward       *big.Int      `json:"reward"`
 	Pow          *big.Int      `json:"pow"`

@@ -451,6 +451,15 @@ type HttpApi interface {
 
 	// GetTransactionBlockByHash 根据哈希查询交易区块的信息
 	GetTransactionBlockByHash(ctx context.Context, chainId, hash string) (*types.TransactionBlock, error)
+
+	// GetNodeProtocol 获取节点的网络协议信息
+	GetNodeProtocol(ctx context.Context, chainId string) (*types.NodeProtocol, error)
+
+	// GetVoteById 查询投票详情
+	GetVoteById(ctx context.Context, chainId, voteId string) (*types.VoteDetails, error)
+
+	// GetProposal 查询提案
+	GetProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error
 }
 
 type httpApi struct {
@@ -517,23 +526,6 @@ func (api *httpApi) GetReceipt(_ context.Context, chainId, hash string) (*types.
 		return nil, response.Error.Error()
 	}
 	return response.Result, nil
-}
-
-func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error) {
-	params := map[string]interface{}{
-		"proposalType":    types.ProposalTypeContractLifecycle,
-		"proposalState":   state,
-		"proposalAddress": contractAddress,
-	}
-
-	response, err := Post[[]types.Proposal[types.ContractLifecycleProposal]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(chainId), api.transport)
-	if err != nil {
-		return nil, err
-	}
-	if response.Error != nil {
-		return nil, response.Error.Error()
-	}
-	return *response.Result, nil
 }
 
 func (api *httpApi) ExistsBusinessContractAddress(ctx context.Context, chainId, address string) (bool, error) {

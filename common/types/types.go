@@ -244,3 +244,27 @@ func (c *CallMultilingualContractCode) Encode() string {
 		return constant.HexPrefix + hex.EncodeToString(bytes)
 	}
 }
+
+// NodeProtocol 节点的网络协议信息
+type NodeProtocol struct {
+	Genesis        string              `json:"genesis"`
+	NetWorkIdGroup []int               `json:"netWorkIdGroup"`
+	Config         *NodeProtocolConfig `json:"config"`
+}
+
+type NodeProtocolConfig struct {
+	GM                   bool     `json:"GM"`
+	Consensus            string   `json:"consensus"`
+	DeployRule           int      `json:"deployRule"`
+	EmptyAnchorPeriodMul int      `json:"emptyAnchorPeriodMul"`
+	Epoch                int      `json:"epoch"`
+	IsContractVote       bool     `json:"isContractVote"`
+	IsDictatorship       bool     `json:"isDictatorship"`
+	LatcGod              string   `json:"latcGod"`
+	LatcID               int      `json:"latcId"`
+	LatcSaints           []string `json:"latcSaints"`
+	NoEmptyAnchor        bool     `json:"noEmptyAnchor"`
+	Period               int      `json:"period"`
+	RootPublicKey        string   `json:"rootPublicKey"`
+	Tokenless            bool     `json:"tokenless"`
+}

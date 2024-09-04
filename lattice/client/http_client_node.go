@@ -59,3 +59,14 @@ func (api *httpApi) GetNodeConfig(_ context.Context, chainID string) (*types.Nod
 	}
 	return *response.Result, nil
 }
+
+func (api *httpApi) GetNodeProtocol(_ context.Context, chainId string) (*types.NodeProtocol, error) {
+	response, err := Post[*types.NodeProtocol](api.Url, NewJsonRpcBody("latc_getProtocols"), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return *response.Result, nil
+}

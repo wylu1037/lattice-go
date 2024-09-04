@@ -42,11 +42,43 @@ const (
 )
 
 // ProposalType 提案类型
+//   - ProposalTypeNone
+//   - ProposalTypeContractManagement		合约内部管理
+//   - ProposalTypeContractLifecycle		合约生命周期
+//   - ProposalTypeModifyChainConfiguration 修改链配置
 type ProposalType uint8
 
 const (
 	ProposalTypeNone ProposalType = iota
-	ProposalTypeContractInnerManager
+	ProposalTypeContractManagement
 	ProposalTypeContractLifecycle
-	ProposalTypeModifyChainConfig
+	ProposalTypeModifyChainConfiguration
 )
+
+// VoteSuggestion 投票建议
+//   - VoteSuggestionDISAPPROVE 反对
+//   - VoteSuggestionAPPROVE	同意
+type VoteSuggestion uint8
+
+const (
+	VoteSuggestionDISAPPROVE VoteSuggestion = iota
+	VoteSuggestionAPPROVE
+)
+
+// VoteDetails 投票详情
+//   - VoteId
+//   - ProposalId
+//   - VoteSuggestion
+//   - Address
+//   - ProposalType
+//   - Nonce
+//   - CreatedAt
+type VoteDetails struct {
+	VoteId         string         `json:"voteId"`
+	ProposalId     string         `json:"proposalId"`
+	VoteSuggestion VoteSuggestion `json:"voteSuggestion"`
+	Address        string         `json:"address"`
+	ProposalType   ProposalType   `json:"proposalType"`
+	Nonce          uint64         `json:"nonce"`
+	CreatedAt      uint64         `json:"createAt"`
+}
