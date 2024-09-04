@@ -147,11 +147,11 @@ func TestLattice_DeployContractWaitReceipt(t *testing.T) {
 	proposal, err := latticeApi.HttpApi().GetContractLifecycleProposal(context.Background(), chainId, receipt.ContractAddress, types.ProposalStateInitial)
 	assert.NoError(t, err)
 
-	voteContract := builtin.NewVoteContract()
+	voteContract := builtin.NewProposalContract()
 	approveData, err := voteContract.Approve(proposal[0].Content.Id)
 	assert.Nil(t, err)
 
-	hash, receipt, err = latticeApi.CallContractWaitReceipt(context.Background(), credentials, chainId, builtin.VoteBuiltinContract.Address, approveData, constant.ZeroPayload, 0, 0, DefaultFixedRetryStrategy())
+	hash, receipt, err = latticeApi.CallContractWaitReceipt(context.Background(), credentials, chainId, builtin.ProposalBuiltinContract.Address, approveData, constant.ZeroPayload, 0, 0, DefaultFixedRetryStrategy())
 	assert.NoError(t, err)
 	t.Log(hash.String())
 	re, _ := json.Marshal(receipt)

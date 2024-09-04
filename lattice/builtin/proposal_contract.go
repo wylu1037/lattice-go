@@ -4,14 +4,18 @@ import (
 	"github.com/wylu1037/lattice-go/abi"
 )
 
-func NewVoteContract() VoteContract {
-	return &voteContract{
-		abi: abi.NewAbi(VoteBuiltinContract.AbiString),
+func NewProposalContract() VoteContract {
+	return &proposalContract{
+		abi: abi.NewAbi(ProposalBuiltinContract.AbiString),
 	}
 }
 
 type VoteContract interface {
-	vote(proposalId string, approve bool) (string, error)
+	// ContractAddress 获取修改链配置的合约地址
+	//
+	// Returns:
+	//   - string: 合约地址，zltc_amgWuhifLRUoZc3GSbv9wUUz6YUfTuWy5
+	ContractAddress() string
 
 	// Approve 投赞同票
 	//
@@ -40,7 +44,7 @@ type VoteContract interface {
 	Cancel(proposalId string) (string, error)
 }
 
-type voteContract struct {
+type proposalContract struct {
 	abi abi.LatticeAbi
 }
 
@@ -49,7 +53,7 @@ const (
 	approve           // 同意
 )
 
-func (c *voteContract) vote(proposalId string, approve bool) (string, error) {
+func (c *proposalContract) vote(proposalId string, approve bool) (string, error) {
 	if approve {
 		return c.Approve(proposalId)
 	} else {
@@ -57,7 +61,11 @@ func (c *voteContract) vote(proposalId string, approve bool) (string, error) {
 	}
 }
 
-func (c *voteContract) Approve(proposalId string) (string, error) {
+func (c *proposalContract) ContractAddress() string {
+	return ProposalBuiltinContract.Address
+}
+
+func (c *proposalContract) Approve(proposalId string) (string, error) {
 	fn, err := c.abi.GetLatticeFunction("vote", proposalId, approve)
 	if err != nil {
 		return "", err
@@ -66,7 +74,7 @@ func (c *voteContract) Approve(proposalId string) (string, error) {
 	return fn.Encode()
 }
 
-func (c *voteContract) Disapprove(proposalId string) (string, error) {
+func (c *proposalContract) Disapprove(proposalId string) (string, error) {
 	fn, err := c.abi.GetLatticeFunction("vote", proposalId, disapprove)
 	if err != nil {
 		return "", err
@@ -75,7 +83,7 @@ func (c *voteContract) Disapprove(proposalId string) (string, error) {
 	return fn.Encode()
 }
 
-func (c *voteContract) Refresh(proposalId string) (string, error) {
+func (c *proposalContract) Refresh(proposalId string) (string, error) {
 	fn, err := c.abi.GetLatticeFunction("refresh", proposalId)
 	if err != nil {
 		return "", err
@@ -84,7 +92,7 @@ func (c *voteContract) Refresh(proposalId string) (string, error) {
 	return fn.Encode()
 }
 
-func (c *voteContract) BatchRefresh(proposalIds []string) (string, error) {
+func (c *proposalContract) BatchRefresh(proposalIds []string) (string, error) {
 	fn, err := c.abi.GetLatticeFunction("batchRefresh", proposalIds)
 	if err != nil {
 		return "", err
@@ -93,7 +101,7 @@ func (c *voteContract) BatchRefresh(proposalIds []string) (string, error) {
 	return fn.Encode()
 }
 
-func (c *voteContract) Cancel(proposalId string) (string, error) {
+func (c *proposalContract) Cancel(proposalId string) (string, error) {
 	fn, err := c.abi.GetLatticeFunction("cancel", proposalId)
 	if err != nil {
 		return "", err
@@ -102,7 +110,7 @@ func (c *voteContract) Cancel(proposalId string) (string, error) {
 	return fn.Encode()
 }
 
-var VoteBuiltinContract = Contract{
+var ProposalBuiltinContract = Contract{
 	Description: "提案投票合约",
 	Address:     "zltc_amgWuhifLRUoZc3GSbv9wUUz6YUfTuWy5",
 	AbiString: `[
