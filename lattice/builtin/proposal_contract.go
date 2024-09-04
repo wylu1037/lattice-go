@@ -4,13 +4,13 @@ import (
 	"github.com/wylu1037/lattice-go/abi"
 )
 
-func NewProposalContract() VoteContract {
+func NewProposalContract() ProposalContract {
 	return &proposalContract{
 		abi: abi.NewAbi(ProposalBuiltinContract.AbiString),
 	}
 }
 
-type VoteContract interface {
+type ProposalContract interface {
 	// ContractAddress 获取修改链配置的合约地址
 	//
 	// Returns:
