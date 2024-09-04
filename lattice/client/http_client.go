@@ -460,6 +460,9 @@ type HttpApi interface {
 
 	// GetProposal 查询提案
 	GetProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error
+
+	// GetTransactionsPagination 根据守护区块高度分页查询交易
+	GetTransactionsPagination(ctx context.Context, chainId string, startDaemonBlockHeight uint64, pageSize uint16) (*types.TransactionsPagination, error)
 }
 
 type httpApi struct {

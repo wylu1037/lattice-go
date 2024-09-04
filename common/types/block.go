@@ -86,3 +86,13 @@ type TransactionBlock struct {
 	Pow        string      `json:"proofOfWork"`
 	Size       uint64      `json:"size"`
 }
+
+// TransactionsPagination 查询交易区块的分页结果
+//   - NextStartingHeight 下一次查询的起始高度
+//   - Count			  查询到的交易数量
+//   - Transactions		  查询到的交易集合
+type TransactionsPagination struct {
+	NextStartingHeight *big.Int            `json:"height"`
+	Count              uint32              `json:"count"`
+	Transactions       []*TransactionBlock `json:"tBlocks"`
+}

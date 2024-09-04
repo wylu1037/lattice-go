@@ -59,3 +59,14 @@ func (api *httpApi) GetTransactionBlockByHash(ctx context.Context, chainId, hash
 	}
 	return response.Result, nil
 }
+
+func (api *httpApi) GetTransactionsPagination(_ context.Context, chainId string, startDaemonBlockHeight uint64, pageSize uint16) (*types.TransactionsPagination, error) {
+	response, err := Post[types.TransactionsPagination](api.Url, NewJsonRpcBody("latc_getTBlockPagesByDNumber", startDaemonBlockHeight, pageSize), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
