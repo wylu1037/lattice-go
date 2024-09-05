@@ -7,6 +7,7 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/bufbuild/protocompile v0.14.0
+	github.com/buger/jsonparser v1.1.1
 	github.com/defiweb/go-eth v0.6.1
 	github.com/ethereum/go-ethereum v1.14.6
 	github.com/golang-jwt/jwt/v4 v4.5.0
