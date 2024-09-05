@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/wylu1037/lattice-go/common/types"
 	"github.com/wylu1037/lattice-go/lattice/block"
+	"github.com/wylu1037/lattice-go/wallet"
 	"io"
 	"net/http"
 	"strings"
@@ -490,12 +491,16 @@ type HttpApi interface {
 	// Returns:
 	//   - o
 	GetErrorEvidences(ctx context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error)
-
 	// GetNodeConfirmedConfiguration 获取节点确认的配置信息
 	GetNodeConfirmedConfiguration(ctx context.Context, chainId string) (*types.NodeConfirmedConfiguration, error)
-
 	// GetNodeVersion 获取节点程序的版本信息
 	GetNodeVersion(ctx context.Context) (*types.NodeVersion, error)
+	// GetNodeSaintKey 获取节点的SaintKey信息
+	GetNodeSaintKey(ctx context.Context) (*wallet.FileKey, error)
+	// GetNodeConfiguration 获取节点的配置
+	GetNodeConfiguration(ctx context.Context) (*types.NodeConfiguration, error)
+	// GetNodeWorkingDirectory 获取节点的工作目录（绝对路径）
+	GetNodeWorkingDirectory(ctx context.Context) (string, error)
 }
 
 type httpApi struct {

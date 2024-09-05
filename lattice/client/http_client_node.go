@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"github.com/wylu1037/lattice-go/common/types"
+	"github.com/wylu1037/lattice-go/wallet"
 )
 
 func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
@@ -91,4 +92,37 @@ func (api *httpApi) GetNodeVersion(_ context.Context) (*types.NodeVersion, error
 		return nil, response.Error.Error()
 	}
 	return response.Result, nil
+}
+
+func (api *httpApi) GetNodeSaintKey(_ context.Context) (*wallet.FileKey, error) {
+	response, err := Post[wallet.FileKey](api.Url, NewJsonRpcBody("node_getSaintKey"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetNodeConfiguration(_ context.Context) (*types.NodeConfiguration, error) {
+	response, err := Post[types.NodeConfiguration](api.Url, NewJsonRpcBody("latc_getConfig"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetNodeWorkingDirectory(_ context.Context) (string, error) {
+	response, err := Post[string](api.Url, NewJsonRpcBody("node_getLocationPath"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return "", err
+	}
+	if response.Error != nil {
+		return "", response.Error.Error()
+	}
+	return *response.Result, nil
 }

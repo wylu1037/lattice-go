@@ -343,3 +343,23 @@ type NodeVersion struct {
 	BuildDateTime  string `json:"BuildDate"`
 	Version        string `json:"Version"`
 }
+
+// NodeConfiguration 节点配置信息
+type NodeConfiguration struct {
+	Latc struct {
+		NetworkIDGroup []int `json:"networkIDGroup"`
+	}
+	Node struct {
+		Name         string   `json:"name"`
+		DataDir      string   `json:"dataDir"`
+		SecondaryDir string   `json:"secondaryDir"`
+		Host         string   `json:"Host"`
+		HTTPPort     int      `json:"HTTPPort"`
+		WSPort       int      `json:"WSPort"`
+		P2PPort      int      `json:"P2PPort"`
+		GinHTTPPort  int      `json:"GinHTTPPort"`
+		JWTEnable    bool     `json:"JWTEnable"`
+		JWTSecret    string   `json:"JWTSecret"`
+		Bootstrap    []string `json:"bootstrap"`
+	}
+}
