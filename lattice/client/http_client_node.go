@@ -50,23 +50,45 @@ func (api *httpApi) GetNodePeers(_ context.Context, chainID string) ([]*types.No
 }
 
 func (api *httpApi) GetNodeConfig(_ context.Context, chainID string) (*types.NodeConfig, error) {
-	response, err := Post[*types.NodeConfig](api.Url, NewJsonRpcBody("latc_getConfig"), api.newHeaders(chainID), api.transport)
+	response, err := Post[types.NodeConfig](api.Url, NewJsonRpcBody("latc_getConfig"), api.newHeaders(chainID), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return *response.Result, nil
+	return response.Result, nil
 }
 
 func (api *httpApi) GetNodeProtocol(_ context.Context, chainId string) (*types.NodeProtocol, error) {
-	response, err := Post[*types.NodeProtocol](api.Url, NewJsonRpcBody("latc_getProtocols"), api.newHeaders(chainId), api.transport)
+	response, err := Post[types.NodeProtocol](api.Url, NewJsonRpcBody("latc_getProtocols"), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
 	if response.Error != nil {
 		return nil, response.Error.Error()
 	}
-	return *response.Result, nil
+	return response.Result, nil
+}
+
+func (api *httpApi) GetNodeConfirmedConfiguration(_ context.Context, chainId string) (*types.NodeConfirmedConfiguration, error) {
+	response, err := Post[types.NodeConfirmedConfiguration](api.Url, NewJsonRpcBody("wallet_getConfirmConfig"), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetNodeVersion(_ context.Context) (*types.NodeVersion, error) {
+	response, err := Post[types.NodeVersion](api.Url, NewJsonRpcBody("node_nodeVersion"), api.newHeaders(emptyChainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
 }

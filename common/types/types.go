@@ -295,3 +295,51 @@ type NodeProtocolConfig struct {
 	ProposalExpirationDays          uint       `json:"ProposalExpireTime,omitempty"`
 	ConfigurationModifyVotingRule   VotingRule `json:"configModifyRule,omitempty"`
 }
+
+// NodeConfirmedConfiguration 节点确认的配置信息
+//   - LatcId
+//   - LatcGod
+//   - LatcSaints
+//   - Consensus
+//   - Epoch
+//   - Tokenless
+//   - Period
+//   - EnableNoTxDelayedMining		   是否不允许无交易时快速出空块，无交易时延迟出块
+//   - NoTxDelayedMiningPeriodMultiple 无交易时的延迟出块间隔倍数
+//   - IsGM							   是否使用了Sm2p256v1曲线
+//   - RootPublicKey
+//   - EnableContractLifecycle		   是否开启合约生命周期
+//   - EnableVotingDictatorship		   是否开启投票(合约生命周期)时盟主一票制度
+//   - ContractDeploymentVotingRule    合约部署的投票规则
+//   - EnableContractManagement		   是否开启合约管理
+//   - ChainVote
+type NodeConfirmedConfiguration struct {
+	LatcId                          uint32     `json:"latcId"`
+	LatcGod                         string     `json:"latcGod"`
+	LatcSaints                      []string   `json:"latcSaints"`
+	Consensus                       string     `json:"consensus"`
+	Epoch                           uint32     `json:"epoch"`
+	Tokenless                       bool       `json:"tokenless"`
+	Period                          uint32     `json:"period"`
+	EnableNoTxDelayedMining         bool       `json:"noEmptyAnchor"`
+	NoTxDelayedMiningPeriodMultiple uint32     `json:"emptyAnchorPeriodMul"`
+	IsGM                            bool       `json:"gm"`
+	RootPublicKey                   string     `json:"rootPublicKey"`
+	EnableContractLifecycle         bool       `json:"isContractVote"`
+	EnableVotingDictatorship        bool       `json:"isDictatorship"`
+	ContractDeploymentVotingRule    VotingRule `json:"deployRule"`
+	EnableContractManagement        bool       `json:"contractPermission"`
+	ChainVote                       bool       `json:"chainVote"`
+}
+
+// NodeVersion 节点的版本信息
+//   - IncentiveInfo  example: 无激励
+//   - ConsortiumInfo example: 联盟链
+//   - BuildDateTime  2024-05-28 07:47:18
+//   - Version		  v2.0.0
+type NodeVersion struct {
+	IncentiveInfo  string `json:"IsIncentive"`
+	ConsortiumInfo string `json:"IsConsortium"`
+	BuildDateTime  string `json:"BuildDate"`
+	Version        string `json:"Version"`
+}

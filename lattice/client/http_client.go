@@ -490,6 +490,12 @@ type HttpApi interface {
 	// Returns:
 	//   - o
 	GetErrorEvidences(ctx context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error)
+
+	// GetNodeConfirmedConfiguration 获取节点确认的配置信息
+	GetNodeConfirmedConfiguration(ctx context.Context, chainId string) (*types.NodeConfirmedConfiguration, error)
+
+	// GetNodeVersion 获取节点程序的版本信息
+	GetNodeVersion(ctx context.Context) (*types.NodeVersion, error)
 }
 
 type httpApi struct {
