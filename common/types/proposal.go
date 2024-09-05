@@ -30,22 +30,33 @@ type ModifyChainConfigProposal struct {
 }
 
 // ProposalState 提案状态
+//   - ProposalStateNONE 	 空值
+//   - ProposalStateINITIAL  提案正在进行投票
+//   - ProposalStateSUCCESS  提案投票通过
+//   - ProposalStateFAILED 	 提案投票未通过
+//   - ProposalStateEXPIRED  提案已过期
+//   - ProposalStateERROR 	 提案执行错误
+//   - ProposalStateCANCEL   提案已取消
+//   - ProposalStateNOTSTART 提案未开始
 type ProposalState uint8
 
 const (
-	ProposalStateNone ProposalState = iota
-	ProposalStateInitial
-	ProposalStateSuccess
-	ProposalStateFailed
-	ProposalStateExpired
-	ProposalStateError
+	ProposalStateNONE ProposalState = iota
+	ProposalStateINITIAL
+	ProposalStateSUCCESS
+	ProposalStateFAILED
+	ProposalStateEXPIRED
+	ProposalStateERROR
+	ProposalStateCANCEL
+	ProposalStateNOTSTART
 )
 
 // ProposalType 提案类型
-//   - ProposalTypeNone
+//   - ProposalTypeNone						None
 //   - ProposalTypeContractManagement		合约内部管理
 //   - ProposalTypeContractLifecycle		合约生命周期
 //   - ProposalTypeModifyChainConfiguration 修改链配置
+//   - ProposalTypeChainByChain				以链建链
 type ProposalType uint8
 
 const (
@@ -53,6 +64,39 @@ const (
 	ProposalTypeContractManagement
 	ProposalTypeContractLifecycle
 	ProposalTypeModifyChainConfiguration
+	ProposalTypeChainByChain
+)
+
+// ModifyChainConfigurationType 修改链配置类型
+//   - ModifyChainConfigurationTypeUpdatePeriod 								更新出块时间
+//   - ModifyChainConfigurationTypeISEnableContractLifecycleVotingDictatorship  是否开启合约生命周期投票的盟主独裁机制，否则为共识投票
+//   - ModifyChainConfigurationTypeAddConsensusNodes 							添加共识节点
+//   - ModifyChainConfigurationTypeDeleteConsensusNodes 						删除共识节点
+//   - ModifyChainConfigurationTypeUpdateConsensus   							更换共识
+//   - ModifyChainConfigurationTypeUpdateContractDeploymentVotingRule 			更新合约部署的投票规则
+//   - ModifyChainConfigurationTypeEnableNoTxDelayedMining						无交易时是否延迟出块
+//   - ModifyChainConfigurationTypeEnableContractLifecycle 						是否开启合约生命周期
+//   - ModifyChainConfigurationTypeEnableContractManagement 					是否启用合约内部权限管理
+//   - ModifyChainConfigurationTypeReplaceConsensusNodes 						替换共识节点
+//   - ModifyChainConfigurationTypeUpdateNoTxDelayedMiningPeriodMultiple		更新无交易时延迟出块的阶段倍数
+//   - ModifyChainConfigurationTypeUpdateProposalExpirationDays					更新提案的过期天数
+//   - ModifyChainConfigurationTypeUpdateChainByChainVotingRule 				更新以链建链的投票规则（修改通道管理规则）
+type ModifyChainConfigurationType uint8
+
+const (
+	ModifyChainConfigurationTypeUpdatePeriod ModifyChainConfigurationType = iota
+	ModifyChainConfigurationTypeISEnableContractLifecycleVotingDictatorship
+	ModifyChainConfigurationTypeAddConsensusNodes
+	ModifyChainConfigurationTypeDeleteConsensusNodes
+	ModifyChainConfigurationTypeUpdateConsensus
+	ModifyChainConfigurationTypeUpdateContractDeploymentVotingRule
+	ModifyChainConfigurationTypeEnableNoTxDelayedMining
+	ModifyChainConfigurationTypeEnableContractLifecycle
+	ModifyChainConfigurationTypeEnableContractManagement
+	ModifyChainConfigurationTypeReplaceConsensusNodes
+	ModifyChainConfigurationTypeUpdateNoTxDelayedMiningPeriodMultiple
+	ModifyChainConfigurationTypeUpdateProposalExpirationDays
+	ModifyChainConfigurationTypeUpdateChainByChainVotingRule
 )
 
 // VoteSuggestion 投票建议

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/wylu1037/lattice-go/common/types"
 	"github.com/wylu1037/lattice-go/wallet"
+	"math/big"
 )
 
 func (api *httpApi) GetNodeInfo(_ context.Context) (*types.NodeInfo, error) {
@@ -125,4 +126,26 @@ func (api *httpApi) GetNodeWorkingDirectory(_ context.Context) (string, error) {
 		return "", response.Error.Error()
 	}
 	return *response.Result, nil
+}
+
+func (api *httpApi) GetSnapshot(_ context.Context, chainId string, daemonBlockHeight *big.Int) (*types.NodeProtocolConfig, error) {
+	response, err := Post[types.NodeProtocolConfig](api.Url, NewJsonRpcBody("clique_getSnapshot", daemonBlockHeight), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
+}
+
+func (api *httpApi) GetLatcInfo(_ context.Context, chainId string) (*types.NodeProtocolConfig, error) {
+	response, err := Post[types.NodeProtocolConfig](api.Url, NewJsonRpcBody("latc_latcInfo"), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return nil, err
+	}
+	if response.Error != nil {
+		return nil, response.Error.Error()
+	}
+	return response.Result, nil
 }

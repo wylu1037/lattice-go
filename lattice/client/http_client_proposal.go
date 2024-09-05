@@ -76,3 +76,15 @@ func (api *httpApi) GetProposal(_ context.Context, chainId, proposalId string, t
 	result = response.Result
 	return nil
 }
+
+func (api *httpApi) GetProposalById(_ context.Context, chainId, proposalId string, result interface{}) error {
+	response, err := Post[interface{}](api.Url, NewJsonRpcBody("wallet_getProposalById", proposalId), api.newHeaders(chainId), api.transport)
+	if err != nil {
+		return err
+	}
+	if response.Error != nil {
+		return response.Error.Error()
+	}
+	result = response.Result
+	return nil
+}

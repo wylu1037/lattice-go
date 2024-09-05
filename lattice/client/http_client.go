@@ -12,6 +12,7 @@ import (
 	"github.com/wylu1037/lattice-go/lattice/block"
 	"github.com/wylu1037/lattice-go/wallet"
 	"io"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -442,7 +443,7 @@ type HttpApi interface {
 	// Returns:
 	//   - *types.ContractManagement
 	//   - error
-	GetContractManagement(ctx context.Context, chainID, contractAddress string) (*types.ContractManagement, error)
+	GetContractManagement(ctx context.Context, chainID, contractAddress string, daemonBlockHeight *big.Int) (*types.ContractManagement, error)
 
 	// GetDaemonBlockByHash 根据守护区块哈希查询守护区块信息
 	GetDaemonBlockByHash(ctx context.Context, chainId, hash string) (*types.DaemonBlock, error)
@@ -501,6 +502,9 @@ type HttpApi interface {
 	GetNodeConfiguration(ctx context.Context) (*types.NodeConfiguration, error)
 	// GetNodeWorkingDirectory 获取节点的工作目录（绝对路径）
 	GetNodeWorkingDirectory(ctx context.Context) (string, error)
+	GetSnapshot(ctx context.Context, chainId string, daemonBlockHeight *big.Int) (*types.NodeProtocolConfig, error)
+	GetLatcInfo(ctx context.Context, chainId string) (*types.NodeProtocolConfig, error)
+	GetProposalById(ctx context.Context, chainId, proposalId string, result interface{}) error
 }
 
 type httpApi struct {
