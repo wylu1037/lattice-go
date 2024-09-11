@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 )
 
-func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*types.UploadFileResponse, error) {
+func (api *httpApi) UploadFile(ctx context.Context, chainId, filePath string) (*types.UploadFileResponse, error) {
 	log.Debug().Msgf("开始上传文件到链上，chainId: %s, filePath: %s", chainId, filePath)
 	uploadPath := fmt.Sprintf("%s/%s", api.GinServerUrl, "beforeSign")
 	body := &bytes.Buffer{}
@@ -42,7 +42,7 @@ func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*ty
 		return nil, fmt.Errorf("failed to close writer: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, uploadPath, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uploadPath, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -78,11 +78,11 @@ func (api *httpApi) UploadFile(_ context.Context, chainId, filePath string) (*ty
 	return uploadFileResponse, nil
 }
 
-func (api *httpApi) DownloadFile(_ context.Context, cid, filePath string) error {
+func (api *httpApi) DownloadFile(ctx context.Context, cid, filePath string) error {
 	log.Debug().Msgf("开始从链上下载文件【%s】", cid)
 	downloadUrl := fmt.Sprintf("%s/download?cid=%s", api.GinServerUrl, cid)
 
-	downloadReq, err := http.NewRequest(http.MethodGet, downloadUrl, nil)
+	downloadReq, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadUrl, nil)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create request for download")
 		return fmt.Errorf("failed to create request: %w", err)

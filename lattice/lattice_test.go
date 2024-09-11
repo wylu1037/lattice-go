@@ -144,7 +144,7 @@ func TestLattice_DeployContractWaitReceipt(t *testing.T) {
 	t.Log(string(r))
 
 	// 获取正在进行的提案
-	proposal, err := latticeApi.HttpApi().GetContractLifecycleProposal(context.Background(), chainId, receipt.ContractAddress, types.ProposalStateInitial)
+	proposal, err := latticeApi.HttpApi().GetContractLifecycleProposal(context.Background(), chainId, receipt.ContractAddress, types.ProposalStateINITIAL)
 	assert.NoError(t, err)
 
 	voteContract := builtin.NewProposalContract()
@@ -211,7 +211,9 @@ func TestLattice_CallContract(t *testing.T) {
 }
 
 func TestLattice_JsonRpc(t *testing.T) {
-	info, err := latticeApi.HttpApi().GetSubchain(context.Background(), "1001")
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	info, err := latticeApi.HttpApi().GetSubchain(ctx, "2")
 	assert.NoError(t, err)
 	t.Log(info)
 }

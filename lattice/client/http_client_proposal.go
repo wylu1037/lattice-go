@@ -5,14 +5,14 @@ import (
 	"github.com/wylu1037/lattice-go/common/types"
 )
 
-func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error) {
+func (api *httpApi) GetContractLifecycleProposal(ctx context.Context, chainId, contractAddress string, state types.ProposalState) ([]types.Proposal[types.ContractLifecycleProposal], error) {
 	params := map[string]interface{}{
 		"proposalType":    types.ProposalTypeContractLifecycle,
 		"proposalState":   state,
 		"proposalAddress": contractAddress,
 	}
 
-	response, err := Post[[]types.Proposal[types.ContractLifecycleProposal]](api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(chainId), api.transport)
+	response, err := Post[[]types.Proposal[types.ContractLifecycleProposal]](ctx, api.Url, NewJsonRpcBody("wallet_getProposal", params), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -22,8 +22,8 @@ func (api *httpApi) GetContractLifecycleProposal(_ context.Context, chainId, con
 	return *response.Result, nil
 }
 
-func (api *httpApi) GetVoteById(_ context.Context, chainId, voteId string) (*types.VoteDetails, error) {
-	response, err := Post[types.VoteDetails](api.Url, NewJsonRpcBody("wallet_getVoteById", voteId), api.newHeaders(chainId), api.transport)
+func (api *httpApi) GetVoteById(ctx context.Context, chainId, voteId string) (*types.VoteDetails, error) {
+	response, err := Post[types.VoteDetails](ctx, api.Url, NewJsonRpcBody("wallet_getVoteById", voteId), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (api *httpApi) GetVoteById(_ context.Context, chainId, voteId string) (*typ
 //
 // Returns:
 //   - error
-func (api *httpApi) GetProposal(_ context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error {
+func (api *httpApi) GetProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error {
 	args := map[string]interface{}{"proposalType": ty, "proposalState": state}
 	if len(proposalId) != 0 {
 		args["proposalId"] = proposalId
@@ -66,7 +66,7 @@ func (api *httpApi) GetProposal(_ context.Context, chainId, proposalId string, t
 		args["dateEnd"] = endDate
 	}
 
-	response, err := Post[interface{}](api.Url, NewJsonRpcBody("wallet_getProposal", args), api.newHeaders(chainId), api.transport)
+	response, err := Post[interface{}](ctx, api.Url, NewJsonRpcBody("wallet_getProposal", args), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return err
 	}
@@ -77,8 +77,8 @@ func (api *httpApi) GetProposal(_ context.Context, chainId, proposalId string, t
 	return nil
 }
 
-func (api *httpApi) GetProposalById(_ context.Context, chainId, proposalId string, result interface{}) error {
-	response, err := Post[interface{}](api.Url, NewJsonRpcBody("wallet_getProposalById", proposalId), api.newHeaders(chainId), api.transport)
+func (api *httpApi) GetProposalById(ctx context.Context, chainId, proposalId string, result interface{}) error {
+	response, err := Post[interface{}](ctx, api.Url, NewJsonRpcBody("wallet_getProposalById", proposalId), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return err
 	}

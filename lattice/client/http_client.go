@@ -540,8 +540,8 @@ func (api *httpApi) newHeaders(chainId string) map[string]string {
 	return headers
 }
 
-func (api *httpApi) SendSignedTransaction(_ context.Context, chainId string, signedTX *block.Transaction) (*common.Hash, error) {
-	response, err := Post[common.Hash](api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(chainId), api.transport)
+func (api *httpApi) SendSignedTransaction(ctx context.Context, chainId string, signedTX *block.Transaction) (*common.Hash, error) {
+	response, err := Post[common.Hash](ctx, api.Url, NewJsonRpcBody("wallet_sendRawTBlock", signedTX), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -551,8 +551,8 @@ func (api *httpApi) SendSignedTransaction(_ context.Context, chainId string, sig
 	return response.Result, nil
 }
 
-func (api *httpApi) PreCallContract(_ context.Context, chainId string, unsignedTX *block.Transaction) (*types.Receipt, error) {
-	response, err := Post[types.Receipt](api.Url, NewJsonRpcBody("wallet_preExecuteContract", unsignedTX), api.newHeaders(chainId), api.transport)
+func (api *httpApi) PreCallContract(ctx context.Context, chainId string, unsignedTX *block.Transaction) (*types.Receipt, error) {
+	response, err := Post[types.Receipt](ctx, api.Url, NewJsonRpcBody("wallet_preExecuteContract", unsignedTX), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -562,8 +562,8 @@ func (api *httpApi) PreCallContract(_ context.Context, chainId string, unsignedT
 	return response.Result, nil
 }
 
-func (api *httpApi) GetReceipt(_ context.Context, chainId, hash string) (*types.Receipt, error) {
-	response, err := Post[types.Receipt](api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(chainId), api.transport)
+func (api *httpApi) GetReceipt(ctx context.Context, chainId, hash string) (*types.Receipt, error) {
+	response, err := Post[types.Receipt](ctx, api.Url, NewJsonRpcBody("latc_getReceipt", hash), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -574,7 +574,7 @@ func (api *httpApi) GetReceipt(_ context.Context, chainId, hash string) (*types.
 }
 
 func (api *httpApi) ExistsBusinessContractAddress(ctx context.Context, chainId, address string) (bool, error) {
-	response, err := Post[bool](api.Url, NewJsonRpcBody("wallet_confirmTaggedContract", address), api.newHeaders(chainId), api.transport)
+	response, err := Post[bool](ctx, api.Url, NewJsonRpcBody("wallet_confirmTaggedContract", address), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return false, nil
 	}
@@ -584,8 +584,8 @@ func (api *httpApi) ExistsBusinessContractAddress(ctx context.Context, chainId, 
 	return *response.Result, nil
 }
 
-func (api *httpApi) GetEvidences(_ context.Context, chainId, date string, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
-	response, err := Post[types.Evidences](api.Url, NewJsonRpcBody("latc_getEvidences", date, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
+func (api *httpApi) GetEvidences(ctx context.Context, chainId, date string, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
+	response, err := Post[types.Evidences](ctx, api.Url, NewJsonRpcBody("latc_getEvidences", date, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -595,8 +595,8 @@ func (api *httpApi) GetEvidences(_ context.Context, chainId, date string, eviden
 	return response.Result, nil
 }
 
-func (api *httpApi) GetErrorEvidences(_ context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
-	response, err := Post[types.Evidences](api.Url, NewJsonRpcBody("latc_getErrorEvidences", date, evidenceLevel, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
+func (api *httpApi) GetErrorEvidences(ctx context.Context, chainId, date string, evidenceLevel types.EvidenceLevel, evidenceType types.EvidenceType, page, pageSize int) (*types.Evidences, error) {
+	response, err := Post[types.Evidences](ctx, api.Url, NewJsonRpcBody("latc_getErrorEvidences", date, evidenceLevel, evidenceType, page, pageSize), api.newHeaders(chainId), api.transport)
 	if err != nil {
 		return nil, err
 	}
@@ -609,6 +609,7 @@ func (api *httpApi) GetErrorEvidences(_ context.Context, chainId, date string, e
 // Post send http request use post method
 //
 // Parameters:
+//   - ctx context.Context: 超时取消
 //   - url string: 请求路径，示例：http://192.168.1.20:13000
 //   - body sonRpcBody: any, 请求体
 //   - headers map[string]string: 请求头
@@ -617,7 +618,7 @@ func (api *httpApi) GetErrorEvidences(_ context.Context, chainId, date string, e
 // Returns:
 //   - []byte: 响应内容
 //   - error: 错误
-func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
+func Post[T any](ctx context.Context, url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
 	log.Debug().Msgf("开始发送JsonRpc请求，url: %s, body: %+v", url, jsonRpcBody)
 	bodyBytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
@@ -625,7 +626,7 @@ func Post[T any](url string, jsonRpcBody *JsonRpcBody, headers map[string]string
 	}
 	body := strings.NewReader(string(bodyBytes))
 
-	request, err := http.NewRequest(http.MethodPost, url, body)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create http request")
 		return nil, err
