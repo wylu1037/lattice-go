@@ -3,6 +3,7 @@ package lattice
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/avast/retry-go"
 	"github.com/ethereum/go-ethereum/common"
@@ -643,6 +644,10 @@ func (svc *lattice) waitReceipt(ctx context.Context, chainId string, hash *commo
 			if err != nil {
 				log.Error().Err(err)
 				return err
+			}
+			if receipt.DBlockNumber == 0 {
+				log.Error().Msgf("交易【%s】的回执的守护区块为空", hash.String())
+				return errors.New("交易的回执的守护区块为空")
 			}
 			return nil
 		},
