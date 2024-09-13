@@ -159,14 +159,17 @@ func (j *jwtImpl) GetToken() (string, error) {
 
 // HttpApiInitParam 初始化HTTP API的参数
 type HttpApiInitParam struct {
-	HttpUrl                    string          // 节点的URL
-	GinServerUrl               string          // 节点gin服务路径
-	Transport                  *http.Transport // tr
-	JwtSecret                  string          // jwt的secret信息
-	JwtTokenExpirationDuration time.Duration   // jwt token的过期时间
+	HttpUrl                    string            // 节点的URL
+	GinServerUrl               string            // 节点gin服务路径
+	Transport                  http.RoundTripper // tr
+	JwtSecret                  string            // jwt的secret信息
+	JwtTokenExpirationDuration time.Duration     // jwt token的过期时间
 }
 
 func NewHttpApi(args *HttpApiInitParam) HttpApi {
+	if args.Transport == nil {
+		args.Transport = http.DefaultTransport
+	}
 	return &httpApi{
 		Url:          args.HttpUrl,
 		GinServerUrl: args.GinServerUrl,
@@ -508,10 +511,10 @@ type HttpApi interface {
 }
 
 type httpApi struct {
-	Url          string          // 节点的Http请求路径
-	GinServerUrl string          // 节点的Gin服务请求路径
-	transport    *http.Transport // http transport
-	jwtApi       Jwt             // jwt api
+	Url          string            // 节点的Http请求路径
+	GinServerUrl string            // 节点的Gin服务请求路径
+	transport    http.RoundTripper // http transport
+	jwtApi       Jwt               // jwt api
 }
 
 const (
@@ -618,7 +621,7 @@ func (api *httpApi) GetErrorEvidences(ctx context.Context, chainId, date string,
 // Returns:
 //   - []byte: 响应内容
 //   - error: 错误
-func Post[T any](ctx context.Context, url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr *http.Transport) (*JsonRpcResponse[*T], error) {
+func Post[T any](ctx context.Context, url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr http.RoundTripper) (*JsonRpcResponse[*T], error) {
 	log.Debug().Msgf("开始发送JsonRpc请求，url: %s, body: %+v", url, jsonRpcBody)
 	bodyBytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
