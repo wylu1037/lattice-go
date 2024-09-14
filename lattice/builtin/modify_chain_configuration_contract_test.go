@@ -8,7 +8,7 @@ import (
 
 func TestModifyChainConfigurationContract_AddConsensusNodes(t *testing.T) {
 	contract := NewModifyChainConfigurationContract()
-	data, err := contract.AddConsensusNodes([]string{"0x9293c604c644bfac34f498998cc3402f203d4d6b"})
+	data, err := contract.AddConsensusNodes([]string{"zltc_dhdfbm9JEoyDvYoCDVsABiZj52TAo9Ei6"})
 	assert.Nil(t, err)
 	expect := "0x8bd24adc000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000009293c604c644bfac34f498998cc3402f203d4d6b"
 	assert.Equal(t, expect, data)
