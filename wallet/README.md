@@ -9,7 +9,7 @@ go get github.com/tyler-smith/go-bip39
 ## BIP32
 BIP-32 提出了分层确定性钱包（HD Wallet）的标准，它允许从单个种子（Seed）生成一系列相关的密钥对，包括一个主账户密钥和无限多个子账户密钥，不同的子账户之间具有层次关系，形成以主账户为根结点的树形结构。
 
-![img.png](bip32.png)
+![img.png](asset/bip32.png)
 ```go
 // 由种子生成主账户私钥
 masterKey, _ := bip32.NewMasterKey(seed)
@@ -55,6 +55,8 @@ HD钱包的根密钥对（_master key pair_）是从一个随机的种子 <sub>s
 ```go
 // 由熵源生成助记词
 // @参数 128 => 12个单词
+// @参数 160 => 15个单词
+// @参数 192 => 18个单词
 // @参数 256 => 24个单词
 entropy, _ := bip39.NewEntropy(128)
 mnemonic, _ := bip39.NewMnemonic(entropy)

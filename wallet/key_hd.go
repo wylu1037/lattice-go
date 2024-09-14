@@ -1,4 +1,4 @@
-package mnemonic
+package wallet
 
 import (
 	"fmt"
@@ -7,11 +7,27 @@ import (
 	"github.com/tyler-smith/go-bip39"
 )
 
-func GenerateMnemonic() string {
-	entropy, _ := bip39.NewEntropy(128)
-	mnemonic, _ := bip39.NewMnemonic(entropy)
-	bip39.GetWordList()
-	return mnemonic
+// EntropySize the length of entropy(bip39)
+//   - EntropySize128 generate 12 words
+//   - EntropySize160 generate 15 words
+//   - EntropySize192 generate 18 words
+//   - EntropySize256 generate 24 words
+type EntropySize int
+
+const (
+	EntropySize128 EntropySize = 128
+	EntropySize160 EntropySize = 160
+	EntropySize192 EntropySize = 192
+	EntropySize256 EntropySize = 256
+)
+
+// GenerateEntropy 1
+func GenerateEntropy(entropySize EntropySize) ([]byte, error) {
+	entropy, err := bip39.NewEntropy(int(entropySize))
+	if err != nil {
+		return nil, err
+	}
+	return entropy, nil
 }
 
 // GenerateSeed Generate a Bip32 HD wallet for the mnemonic and a user supplied password
@@ -20,6 +36,7 @@ func GenerateSeed(mnemonic, passphrase string) []byte {
 	return bip39.NewSeed(mnemonic, passphrase)
 }
 
+// NewMasterKey 生成主账户密钥
 func NewMasterKey(seed []byte) string {
 	masterKey, _ := bip32.NewMasterKey(seed)
 	publicKey := masterKey.PublicKey()
