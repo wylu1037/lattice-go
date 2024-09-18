@@ -211,9 +211,10 @@ func TestLattice_CallContract(t *testing.T) {
 }
 
 func TestLattice_JsonRpc(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-	info, err := latticeApi.HttpApi().GetSubchain(ctx, "2")
+	proposal := new([]types.Proposal[types.ContractLifecycleProposal])
+	err := latticeApi.HttpApi().GetProposal(ctx, "2", "", types.ProposalTypeNone, types.ProposalStateNONE, "zltc_YNHgouP2aJgVnt2HncRtoj2mDqcb34Vwz", "", "20240904", "20240904", proposal)
 	assert.NoError(t, err)
-	t.Log(info)
+	t.Log(proposal)
 }

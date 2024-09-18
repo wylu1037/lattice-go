@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/wylu1037/lattice-go/common/types"
 )
 
@@ -49,6 +50,17 @@ func (api *httpApi) GetVoteById(ctx context.Context, chainId, voteId string) (*t
 // Returns:
 //   - error
 func (api *httpApi) GetProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error {
+	response, err := api.GetRawProposal(ctx, chainId, proposalId, ty, state, proposalAddress, contractAddress, startDate, endDate)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(response, result); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (api *httpApi) GetRawProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string) (json.RawMessage, error) {
 	args := map[string]interface{}{"proposalType": ty, "proposalState": state}
 	if len(proposalId) != 0 {
 		args["proposalId"] = proposalId
@@ -66,15 +78,14 @@ func (api *httpApi) GetProposal(ctx context.Context, chainId, proposalId string,
 		args["dateEnd"] = endDate
 	}
 
-	response, err := Post[interface{}](ctx, api.Url, NewJsonRpcBody("wallet_getProposal", args), api.newHeaders(chainId), api.transport)
+	response, err := Post[json.RawMessage](ctx, api.Url, NewJsonRpcBody("wallet_getProposal", args), api.newHeaders(chainId), api.transport)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if response.Error != nil {
-		return response.Error.Error()
+		return nil, response.Error.Error()
 	}
-	result = response.Result
-	return nil
+	return *response.Result, nil
 }
 
 func (api *httpApi) GetProposalById(ctx context.Context, chainId, proposalId string, result interface{}) error {

@@ -465,6 +465,8 @@ type HttpApi interface {
 
 	// GetProposal 查询提案
 	GetProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string, result interface{}) error
+	// GetRawProposal 查询提案
+	GetRawProposal(ctx context.Context, chainId, proposalId string, ty types.ProposalType, state types.ProposalState, proposalAddress, contractAddress, startDate, endDate string) (json.RawMessage, error)
 
 	// GetTransactionsPagination 根据守护区块高度分页查询交易
 	GetTransactionsPagination(ctx context.Context, chainId string, startDaemonBlockHeight uint64, pageSize uint16) (*types.TransactionsPagination, error)
@@ -622,6 +624,21 @@ func (api *httpApi) GetErrorEvidences(ctx context.Context, chainId, date string,
 //   - []byte: 响应内容
 //   - error: 错误
 func Post[T any](ctx context.Context, url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr http.RoundTripper) (*JsonRpcResponse[*T], error) {
+	response, err := rawPost(ctx, url, jsonRpcBody, headers, tr)
+	if err != nil {
+		return nil, err
+	}
+
+	var t JsonRpcResponse[*T]
+	if err := json.Unmarshal(response, &t); err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal response body")
+		return nil, err
+	}
+
+	return &t, nil
+}
+
+func rawPost(ctx context.Context, url string, jsonRpcBody *JsonRpcBody, headers map[string]string, tr http.RoundTripper) ([]byte, error) {
 	log.Debug().Msgf("开始发送JsonRpc请求，url: %s, body: %+v", url, jsonRpcBody)
 	bodyBytes, err := json.Marshal(jsonRpcBody)
 	if err != nil {
@@ -657,12 +674,6 @@ func Post[T any](ctx context.Context, url string, jsonRpcBody *JsonRpcBody, head
 		log.Error().Err(err).Msg("Failed to read response body")
 		return nil, err
 	} else {
-		var t JsonRpcResponse[*T]
-		if err := json.Unmarshal(res, &t); err != nil {
-			log.Error().Err(err).Msg("Failed to unmarshal response body")
-			return nil, err
-		}
-
-		return &t, nil
+		return res, nil
 	}
 }

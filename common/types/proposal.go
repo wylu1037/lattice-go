@@ -1,8 +1,8 @@
 package types
 
 type Proposal[T ContractLifecycleProposal | ModifyChainConfigProposal] struct {
-	Type    uint8 `json:"proposalType"`
-	Content *T    `json:"proposalContent"`
+	Type    ProposalType `json:"proposalType"`
+	Content *T           `json:"proposalContent"`
 }
 
 // ContractLifecycleProposal 合约生命周期提案
